@@ -1,0 +1,192 @@
+﻿{
+    "schema_version":  1,
+    "scenario":  "native-tray",
+    "root_process_id":  12292,
+    "sample_count":  14,
+    "interval_ms":  1000,
+    "recorded_at":  "2026-11-11T15:04:50.4574584+02:00",
+    "working_set_mb":  {
+                           "avg":  8.55,
+                           "peak":  8.55
+                       },
+    "private_bytes_mb":  {
+                             "avg":  1.44,
+                             "peak":  1.44
+                         },
+    "process_count":  {
+                          "avg":  1,
+                          "peak":  1
+                      },
+    "artifact_mb":  null,
+    "caveat":  "Sum of root and child processes: shared working-set pages may be double-counted; detached WebView2 helpers may be missing.",
+    "samples":  [
+                    {
+                        "timestamp":  "2026-11-11T15:04:34.9286853+02:00",
+                        "working_set_mb":  8.55,
+                        "private_bytes_mb":  1.44,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  12292,
+                                              "name":  "native-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:04:36.0839863+02:00",
+                        "working_set_mb":  8.55,
+                        "private_bytes_mb":  1.44,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  12292,
+                                              "name":  "native-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:04:37.1887614+02:00",
+                        "working_set_mb":  8.55,
+                        "private_bytes_mb":  1.44,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  12292,
+                                              "name":  "native-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:04:38.2915955+02:00",
+                        "working_set_mb":  8.55,
+                        "private_bytes_mb":  1.44,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  12292,
+                                              "name":  "native-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:04:39.4161993+02:00",
+                        "working_set_mb":  8.55,
+                        "private_bytes_mb":  1.44,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  12292,
+                                              "name":  "native-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:04:40.5289442+02:00",
+                        "working_set_mb":  8.55,
+                        "private_bytes_mb":  1.44,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  12292,
+                                              "name":  "native-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:04:41.6304547+02:00",
+                        "working_set_mb":  8.55,
+                        "private_bytes_mb":  1.44,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  12292,
+                                              "name":  "native-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:04:42.7453285+02:00",
+                        "working_set_mb":  8.55,
+                        "private_bytes_mb":  1.44,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  12292,
+                                              "name":  "native-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:04:43.8695073+02:00",
+                        "working_set_mb":  8.55,
+                        "private_bytes_mb":  1.44,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  12292,
+                                              "name":  "native-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:04:44.9888494+02:00",
+                        "working_set_mb":  8.55,
+                        "private_bytes_mb":  1.44,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  12292,
+                                              "name":  "native-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:04:46.1149020+02:00",
+                        "working_set_mb":  8.55,
+                        "private_bytes_mb":  1.44,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  12292,
+                                              "name":  "native-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:04:47.2248410+02:00",
+                        "working_set_mb":  8.55,
+                        "private_bytes_mb":  1.44,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  12292,
+                                              "name":  "native-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:04:48.3349632+02:00",
+                        "working_set_mb":  8.55,
+                        "private_bytes_mb":  1.44,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  12292,
+                                              "name":  "native-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:04:49.4503600+02:00",
+                        "working_set_mb":  8.55,
+                        "private_bytes_mb":  1.44,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  12292,
+                                              "name":  "native-spike"
+                                          }
+                                      ]
+                    }
+                ]
+}

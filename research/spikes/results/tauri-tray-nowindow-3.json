@@ -1,0 +1,192 @@
+﻿{
+    "schema_version":  1,
+    "scenario":  "tauri-tray-nowindow",
+    "root_process_id":  24168,
+    "sample_count":  14,
+    "interval_ms":  1000,
+    "recorded_at":  "2026-11-11T15:05:29.7330873+02:00",
+    "working_set_mb":  {
+                           "avg":  11.18,
+                           "peak":  11.18
+                       },
+    "private_bytes_mb":  {
+                             "avg":  1.91,
+                             "peak":  1.91
+                         },
+    "process_count":  {
+                          "avg":  1,
+                          "peak":  1
+                      },
+    "artifact_mb":  null,
+    "caveat":  "Sum of root and child processes: shared working-set pages may be double-counted; detached WebView2 helpers may be missing.",
+    "samples":  [
+                    {
+                        "timestamp":  "2026-11-11T15:05:14.2610917+02:00",
+                        "working_set_mb":  11.18,
+                        "private_bytes_mb":  1.91,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  24168,
+                                              "name":  "tauri-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:05:15.4028324+02:00",
+                        "working_set_mb":  11.18,
+                        "private_bytes_mb":  1.91,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  24168,
+                                              "name":  "tauri-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:05:16.5048653+02:00",
+                        "working_set_mb":  11.18,
+                        "private_bytes_mb":  1.91,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  24168,
+                                              "name":  "tauri-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:05:17.6027581+02:00",
+                        "working_set_mb":  11.18,
+                        "private_bytes_mb":  1.91,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  24168,
+                                              "name":  "tauri-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:05:18.7121434+02:00",
+                        "working_set_mb":  11.18,
+                        "private_bytes_mb":  1.91,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  24168,
+                                              "name":  "tauri-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:05:19.8292140+02:00",
+                        "working_set_mb":  11.18,
+                        "private_bytes_mb":  1.91,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  24168,
+                                              "name":  "tauri-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:05:20.9309070+02:00",
+                        "working_set_mb":  11.18,
+                        "private_bytes_mb":  1.91,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  24168,
+                                              "name":  "tauri-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:05:22.0484005+02:00",
+                        "working_set_mb":  11.18,
+                        "private_bytes_mb":  1.91,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  24168,
+                                              "name":  "tauri-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:05:23.1527451+02:00",
+                        "working_set_mb":  11.18,
+                        "private_bytes_mb":  1.91,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  24168,
+                                              "name":  "tauri-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:05:24.2741670+02:00",
+                        "working_set_mb":  11.18,
+                        "private_bytes_mb":  1.91,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  24168,
+                                              "name":  "tauri-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:05:25.3782889+02:00",
+                        "working_set_mb":  11.18,
+                        "private_bytes_mb":  1.91,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  24168,
+                                              "name":  "tauri-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:05:26.5017526+02:00",
+                        "working_set_mb":  11.18,
+                        "private_bytes_mb":  1.91,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  24168,
+                                              "name":  "tauri-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:05:27.6073337+02:00",
+                        "working_set_mb":  11.18,
+                        "private_bytes_mb":  1.91,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  24168,
+                                              "name":  "tauri-spike"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:05:28.7264452+02:00",
+                        "working_set_mb":  11.18,
+                        "private_bytes_mb":  1.91,
+                        "process_count":  1,
+                        "processes":  [
+                                          {
+                                              "id":  24168,
+                                              "name":  "tauri-spike"
+                                          }
+                                      ]
+                    }
+                ]
+}

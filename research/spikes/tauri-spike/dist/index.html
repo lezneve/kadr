@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>kadr</title>
+<style>
+  :root { color-scheme: light dark;
+    --ground:#f5f5f6; --raised:#ffffff; --hover:#f7f7f8; --ink:#1d1d1f; --ink2:#5b5b60; --ink3:#6e6e73;
+    --hair:rgba(29,29,31,.10); --cap:#f0f0f2; --on:#ffffff; --alert:#c4302b; }
+  @media (prefers-color-scheme: dark) { :root {
+    --ground:#1c1c1e; --raised:#242426; --hover:#2a2a2c; --ink:#f2f2f2; --ink2:#a1a1a6; --ink3:#8e8e93;
+    --hair:rgba(242,242,242,.08); --cap:#2c2c2e; --on:#3a3a3c; --alert:#ff7b72; } }
+  * { box-sizing:border-box; margin:0; }
+  html, body { background:var(--ground); }
+  body { font:13px/1.4 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif; color:var(--ink); padding:16px 24px 24px; user-select:none; }
+  h1 { font:500 20px/32px "Segoe UI Variable Display","Segoe UI",sans-serif; padding:0 8px; margin-bottom:8px; }
+  h2 { font-size:12px; font-weight:500; color:var(--ink2); padding:0 8px; height:26px; line-height:22px; }
+  .group { background:var(--raised); border:1px solid var(--hair); border-radius:12px; margin-bottom:16px; }
+  .row { position:relative; display:flex; align-items:center; min-height:44px; padding:0 16px; width:100%; border:0; background:none; font:inherit; color:inherit; text-align:left; }
+  .row + .row::before { content:""; position:absolute; top:0; left:16px; right:16px; border-top:1px solid var(--hair); }
+  button.row:hover { background:var(--hover); }
+  .row:first-child { border-radius:11px 11px 0 0; } .row:last-child { border-radius:0 0 11px 11px; } .row:only-child { border-radius:11px; }
+  .row > span:first-child { flex:1; }
+  /* signature: crop marks on the row that has focus */
+  .row:focus-visible, .row:focus-within { outline:none; }
+  .row:focus-visible::after, .row:focus-within::after { content:""; position:absolute; inset:4px; pointer-events:none;
+    background:
+      linear-gradient(var(--ink),var(--ink)) top left/10px 2px, linear-gradient(var(--ink),var(--ink)) top left/2px 10px,
+      linear-gradient(var(--ink),var(--ink)) top right/10px 2px, linear-gradient(var(--ink),var(--ink)) top right/2px 10px,
+      linear-gradient(var(--ink),var(--ink)) bottom left/10px 2px, linear-gradient(var(--ink),var(--ink)) bottom left/2px 10px,
+      linear-gradient(var(--ink),var(--ink)) bottom right/10px 2px, linear-gradient(var(--ink),var(--ink)) bottom right/2px 10px;
+    background-repeat:no-repeat; }
+  .keys { display:flex; gap:4px; }
+  kbd { font:12px/22px inherit; font-family:inherit; padding:0 8px; border:1px solid var(--hair); border-radius:6px; background:var(--cap); }
+  .seg { display:flex; padding:2px; background:var(--cap); border-radius:8px; }
+  .seg label { position:relative; }
+  .seg input { position:absolute; opacity:0; inset:0; }
+  .seg span { display:block; padding:0 12px; line-height:26px; border-radius:6px; font-size:12px; color:var(--ink2); }
+  .seg input:checked + span { background:var(--on); color:var(--ink); }
+  .seg input:focus-visible + span { box-shadow:inset 0 -2px 0 -1px var(--ink); }
+  .value { font-size:12px; color:var(--ink2); }
+  .name { flex-direction:column; align-items:stretch; padding:8px 16px 6px; }
+  .name .line { display:flex; align-items:center; height:30px; }
+  .name .line span { flex:1; }
+  .name input { width:240px; height:28px; padding:0 8px; font:12px "Cascadia Mono",Consolas,monospace; color:var(--ink); background:var(--cap); border:1px solid var(--hair); border-radius:6px; outline:none; caret-color:var(--ink); }
+  .name input::selection { background:var(--ink); color:var(--ground); }
+  .next { font:12px/22px "Cascadia Mono",Consolas,monospace; color:var(--ink3); }
+  .switch { appearance:none; width:36px; height:20px; border-radius:10px; border:1px solid var(--ink3); position:relative; margin:0; }
+  .switch::after { content:""; position:absolute; top:3px; left:3px; width:12px; height:12px; border-radius:6px; background:var(--ink2); }
+  .switch:checked { background:var(--ink); border-color:var(--ink); } .switch:checked::after { left:19px; background:var(--raised); }
+  .switch:focus { outline:none; }
+</style>
+</head>
+<body>
+  <h1>settings</h1>
+  <h2 id="h-keys">hotkeys</h2>
+  <div class="group" role="group" aria-labelledby="h-keys">
+    <button class="row" aria-label="capture region, ctrl+printscreen"><span>capture region</span><span class="keys"><kbd>ctrl</kbd><kbd>printscreen</kbd></span></button>
+    <button class="row" aria-label="capture window, alt+printscreen"><span>capture window</span><span class="keys"><kbd>alt</kbd><kbd>printscreen</kbd></span></button>
+    <button class="row" aria-label="capture screen, ctrl+shift+printscreen"><span>capture screen</span><span class="keys"><kbd>ctrl</kbd><kbd>shift</kbd><kbd>printscreen</kbd></span></button>
+  </div>
+  <h2 id="h-after">after capture</h2>
+  <div class="group" role="group" aria-labelledby="h-after">
+    <div class="row" role="radiogroup" aria-label="send to"><span>send to</span>
+      <span class="seg">
+        <label><input type="radio" name="send"><span>clipboard</span></label>
+        <label><input type="radio" name="send"><span>file</span></label>
+        <label><input type="radio" name="send" checked><span>both</span></label>
+      </span>
+    </div>
+  </div>
+  <h2 id="h-save">saving</h2>
+  <div class="group" role="group" aria-labelledby="h-save">
+    <button class="row" aria-label="folder, C:\Users\you\Pictures\kadr"><span>folder</span><span class="value">C:\Users\you\Pictures\kadr  ›</span></button>
+    <label class="row name"><span class="line"><span>file name</span><input value="kadr_%Y-%m-%d_%H-%M-%S" spellcheck="false"></span><span class="next">next file  kadr_2026-11-11_18-20-41.png</span></label>
+  </div>
+  <h2 id="h-gen">general</h2>
+  <div class="group" role="group" aria-labelledby="h-gen">
+    <label class="row"><span>start with windows</span><input class="switch" type="checkbox" role="switch"></label>
+  </div>
+  <script>document.querySelector('button.row').focus();</script>
+</body>
+</html>

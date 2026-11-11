@@ -1,0 +1,528 @@
+﻿{
+    "schema_version":  1,
+    "scenario":  "tauri-window-open",
+    "root_process_id":  22364,
+    "sample_count":  14,
+    "interval_ms":  1000,
+    "recorded_at":  "2026-11-11T15:03:01.8485346+02:00",
+    "working_set_mb":  {
+                           "avg":  331.1,
+                           "peak":  339.35
+                       },
+    "private_bytes_mb":  {
+                             "avg":  141.99,
+                             "peak":  142.98
+                         },
+    "process_count":  {
+                          "avg":  7,
+                          "peak":  7
+                      },
+    "artifact_mb":  null,
+    "caveat":  "Sum of root and child processes: shared working-set pages may be double-counted; detached WebView2 helpers may be missing.",
+    "samples":  [
+                    {
+                        "timestamp":  "2026-11-11T15:02:45.9839228+02:00",
+                        "working_set_mb":  330.21,
+                        "private_bytes_mb":  141.92,
+                        "process_count":  7,
+                        "processes":  [
+                                          {
+                                              "id":  22364,
+                                              "name":  "tauri-spike"
+                                          },
+                                          {
+                                              "id":  22264,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  8568,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  12400,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20664,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  1740,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20144,
+                                              "name":  "msedgewebview2"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:02:47.1713785+02:00",
+                        "working_set_mb":  330.21,
+                        "private_bytes_mb":  141.89,
+                        "process_count":  7,
+                        "processes":  [
+                                          {
+                                              "id":  22364,
+                                              "name":  "tauri-spike"
+                                          },
+                                          {
+                                              "id":  22264,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  8568,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  12400,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20664,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  1740,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20144,
+                                              "name":  "msedgewebview2"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:02:48.3049472+02:00",
+                        "working_set_mb":  330.21,
+                        "private_bytes_mb":  141.89,
+                        "process_count":  7,
+                        "processes":  [
+                                          {
+                                              "id":  22364,
+                                              "name":  "tauri-spike"
+                                          },
+                                          {
+                                              "id":  22264,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  8568,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  12400,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20664,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  1740,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20144,
+                                              "name":  "msedgewebview2"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:02:49.4335205+02:00",
+                        "working_set_mb":  330.21,
+                        "private_bytes_mb":  141.89,
+                        "process_count":  7,
+                        "processes":  [
+                                          {
+                                              "id":  22364,
+                                              "name":  "tauri-spike"
+                                          },
+                                          {
+                                              "id":  22264,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  8568,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  12400,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20664,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  1740,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20144,
+                                              "name":  "msedgewebview2"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:02:50.5660647+02:00",
+                        "working_set_mb":  330.35,
+                        "private_bytes_mb":  141.91,
+                        "process_count":  7,
+                        "processes":  [
+                                          {
+                                              "id":  22364,
+                                              "name":  "tauri-spike"
+                                          },
+                                          {
+                                              "id":  22264,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  8568,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  12400,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20664,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  1740,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20144,
+                                              "name":  "msedgewebview2"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:02:51.7055198+02:00",
+                        "working_set_mb":  330.34,
+                        "private_bytes_mb":  141.89,
+                        "process_count":  7,
+                        "processes":  [
+                                          {
+                                              "id":  22364,
+                                              "name":  "tauri-spike"
+                                          },
+                                          {
+                                              "id":  22264,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  8568,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  12400,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20664,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  1740,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20144,
+                                              "name":  "msedgewebview2"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:02:52.8333016+02:00",
+                        "working_set_mb":  330.65,
+                        "private_bytes_mb":  141.92,
+                        "process_count":  7,
+                        "processes":  [
+                                          {
+                                              "id":  22364,
+                                              "name":  "tauri-spike"
+                                          },
+                                          {
+                                              "id":  22264,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  8568,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  12400,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20664,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  1740,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20144,
+                                              "name":  "msedgewebview2"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:02:54.0111112+02:00",
+                        "working_set_mb":  330.64,
+                        "private_bytes_mb":  141.92,
+                        "process_count":  7,
+                        "processes":  [
+                                          {
+                                              "id":  22364,
+                                              "name":  "tauri-spike"
+                                          },
+                                          {
+                                              "id":  22264,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  8568,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  12400,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20664,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  1740,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20144,
+                                              "name":  "msedgewebview2"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:02:55.1611623+02:00",
+                        "working_set_mb":  330.64,
+                        "private_bytes_mb":  141.92,
+                        "process_count":  7,
+                        "processes":  [
+                                          {
+                                              "id":  22364,
+                                              "name":  "tauri-spike"
+                                          },
+                                          {
+                                              "id":  22264,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  8568,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  12400,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20664,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  1740,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20144,
+                                              "name":  "msedgewebview2"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:02:56.2954533+02:00",
+                        "working_set_mb":  330.64,
+                        "private_bytes_mb":  141.92,
+                        "process_count":  7,
+                        "processes":  [
+                                          {
+                                              "id":  22364,
+                                              "name":  "tauri-spike"
+                                          },
+                                          {
+                                              "id":  22264,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  8568,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  12400,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20664,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  1740,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20144,
+                                              "name":  "msedgewebview2"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:02:57.4348587+02:00",
+                        "working_set_mb":  330.64,
+                        "private_bytes_mb":  141.92,
+                        "process_count":  7,
+                        "processes":  [
+                                          {
+                                              "id":  22364,
+                                              "name":  "tauri-spike"
+                                          },
+                                          {
+                                              "id":  22264,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  8568,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  12400,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20664,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  1740,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20144,
+                                              "name":  "msedgewebview2"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:02:58.5776647+02:00",
+                        "working_set_mb":  330.64,
+                        "private_bytes_mb":  141.92,
+                        "process_count":  7,
+                        "processes":  [
+                                          {
+                                              "id":  22364,
+                                              "name":  "tauri-spike"
+                                          },
+                                          {
+                                              "id":  22264,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  8568,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  12400,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20664,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  1740,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20144,
+                                              "name":  "msedgewebview2"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:02:59.7064957+02:00",
+                        "working_set_mb":  330.64,
+                        "private_bytes_mb":  141.92,
+                        "process_count":  7,
+                        "processes":  [
+                                          {
+                                              "id":  22364,
+                                              "name":  "tauri-spike"
+                                          },
+                                          {
+                                              "id":  22264,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  8568,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  12400,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20664,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  1740,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20144,
+                                              "name":  "msedgewebview2"
+                                          }
+                                      ]
+                    },
+                    {
+                        "timestamp":  "2026-11-11T15:03:00.8384260+02:00",
+                        "working_set_mb":  339.35,
+                        "private_bytes_mb":  142.98,
+                        "process_count":  7,
+                        "processes":  [
+                                          {
+                                              "id":  22364,
+                                              "name":  "tauri-spike"
+                                          },
+                                          {
+                                              "id":  22264,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  8568,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  12400,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20664,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  1740,
+                                              "name":  "msedgewebview2"
+                                          },
+                                          {
+                                              "id":  20144,
+                                              "name":  "msedgewebview2"
+                                          }
+                                      ]
+                    }
+                ]
+}

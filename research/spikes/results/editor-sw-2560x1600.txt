@@ -1,0 +1,45 @@
+run 0 sw 2560x1600: copy into section 6.1 ms, spawn 7.1 ms, start→first paint 120.4 ms (signalled true), child total 221 ms, exit 0
+    main: private 1.1 MiB, ws 6.2 MiB
+    section mapped, checksum matches
+    window 47.8 ms, d2d target 29.0 ms, bitmap upload 2.5 ms, first draw 14.6 ms, dwm flush 7.1 ms; main→visible 100.9 ms
+    first paint: private 50.9 MiB, ws 81.2 MiB
+    export without annotations: 13.3 ms, identical to source (rgb): true, alpha byte 255
+    export with blur + redact: 19.6 ms; pixels changed outside the two rects: 0; redact pixels not black: 0; blur variance 10051 → 2040, edge roughness 4.0 → 0.1
+    blur rect pixels changed: 256000 of 256000; src row [43, 44, 84, 84, 85, 85, 46, 46] out row [63, 63, 64, 64, 65, 65, 65, 65]
+    after export: private 140.0 MiB, ws 168.0 MiB
+run 1 sw 2560x1600: copy into section 6.9 ms, spawn 6.0 ms, start→first paint 111.2 ms (signalled true), child total 208 ms, exit 0
+    main: private 1.2 MiB, ws 6.3 MiB
+    section mapped, checksum matches
+    window 46.2 ms, d2d target 26.8 ms, bitmap upload 2.7 ms, first draw 11.8 ms, dwm flush 3.9 ms; main→visible 91.4 ms
+    first paint: private 51.0 MiB, ws 81.3 MiB
+    export without annotations: 12.5 ms, identical to source (rgb): true, alpha byte 255
+    export with blur + redact: 19.0 ms; pixels changed outside the two rects: 0; redact pixels not black: 0; blur variance 10051 → 2040, edge roughness 4.0 → 0.1
+    blur rect pixels changed: 256000 of 256000; src row [43, 44, 84, 84, 85, 85, 46, 46] out row [63, 63, 64, 64, 65, 65, 65, 65]
+    after export: private 138.9 MiB, ws 167.5 MiB
+run 2 sw 2560x1600: copy into section 6.5 ms, spawn 6.0 ms, start→first paint 109.7 ms (signalled true), child total 226 ms, exit 0
+    main: private 1.2 MiB, ws 6.3 MiB
+    section mapped, checksum matches
+    window 47.0 ms, d2d target 26.5 ms, bitmap upload 1.9 ms, first draw 7.8 ms, dwm flush 6.2 ms; main→visible 89.5 ms
+    first paint: private 51.3 MiB, ws 81.4 MiB
+    export without annotations: 12.2 ms, identical to source (rgb): true, alpha byte 255
+    export with blur + redact: 21.9 ms; pixels changed outside the two rects: 0; redact pixels not black: 0; blur variance 10051 → 2040, edge roughness 4.0 → 0.1
+    blur rect pixels changed: 256000 of 256000; src row [43, 44, 84, 84, 85, 85, 46, 46] out row [63, 63, 64, 64, 65, 65, 65, 65]
+    after export: private 141.0 MiB, ws 167.9 MiB
+run 3 sw 2560x1600: copy into section 6.7 ms, spawn 6.4 ms, start→first paint 114.0 ms (signalled true), child total 215 ms, exit 0
+    main: private 1.1 MiB, ws 6.3 MiB
+    section mapped, checksum matches
+    window 44.4 ms, d2d target 29.8 ms, bitmap upload 2.8 ms, first draw 9.3 ms, dwm flush 7.3 ms; main→visible 93.6 ms
+    first paint: private 51.2 MiB, ws 81.4 MiB
+    export without annotations: 12.9 ms, identical to source (rgb): true, alpha byte 255
+    export with blur + redact: 22.9 ms; pixels changed outside the two rects: 0; redact pixels not black: 0; blur variance 10051 → 2040, edge roughness 4.0 → 0.1
+    blur rect pixels changed: 256000 of 256000; src row [43, 44, 84, 84, 85, 85, 46, 46] out row [63, 63, 64, 64, 65, 65, 65, 65]
+    after export: private 140.2 MiB, ws 167.9 MiB
+run 4 sw 2560x1600: copy into section 6.4 ms, spawn 5.7 ms, start→first paint 105.4 ms (signalled true), child total 205 ms, exit 0
+    main: private 1.2 MiB, ws 6.3 MiB
+    section mapped, checksum matches
+    window 46.3 ms, d2d target 26.1 ms, bitmap upload 2.2 ms, first draw 9.3 ms, dwm flush 3.0 ms; main→visible 87.0 ms
+    first paint: private 51.2 MiB, ws 81.4 MiB
+    export without annotations: 12.5 ms, identical to source (rgb): true, alpha byte 255
+    export with blur + redact: 22.4 ms; pixels changed outside the two rects: 0; redact pixels not black: 0; blur variance 10051 → 2040, edge roughness 4.0 → 0.1
+    blur rect pixels changed: 256000 of 256000; src row [43, 44, 84, 84, 85, 85, 46, 46] out row [63, 63, 64, 64, 65, 65, 65, 65]
+    after export: private 141.8 MiB, ws 168.7 MiB

@@ -1,0 +1,84 @@
+﻿kadr 18252: elevated=False integrity=0x2000
+
+phase a: intensive, 5 min (copy+save, overlay visible)
+     0,0 min  intense cycles     1  private    15 MiB  ws  45,2 MiB  gdi  16  user  14  handles  218  threads  4
+     0,5 min  intense cycles   201  private  15,3 MiB  ws  45,4 MiB  gdi  16  user  15  handles  219  threads  6
+     1,0 min  intense cycles   401  private  16,1 MiB  ws  45,8 MiB  gdi  16  user  15  handles  219  threads  3
+     1,5 min  intense cycles   598  private  15,6 MiB  ws  45,5 MiB  gdi  16  user  14  handles  219  threads  3
+     2,0 min  intense cycles   778  private  15,6 MiB  ws  45,5 MiB  gdi  16  user  14  handles  219  threads  3
+     2,5 min  intense cycles   942  private  14,6 MiB  ws  44,9 MiB  gdi  16  user  14  handles  217  threads  1
+     3,0 min  intense cycles  1091  private   6,9 MiB  ws  36,8 MiB  gdi  16  user  15  handles  217  threads  1
+     3,5 min  intense cycles  1232  private     6 MiB  ws  36,5 MiB  gdi  16  user  16  handles  217  threads  1
+     4,0 min  intense cycles  1366  private  15,5 MiB  ws  45,5 MiB  gdi  16  user  14  handles  217  threads  1
+     4,5 min  intense cycles  1494  private  15,5 MiB  ws  45,5 MiB  gdi  16  user  14  handles  217  threads  1
+  clipboard restored after phase a
+
+phase b: long, 25 min (save only, one invisible capture every 5 s)
+     5,0 min  long    cycles  1617  private   4,4 MiB  ws  34,5 MiB  gdi  16  user  13  handles  217  threads  3
+     5,5 min  long    cycles  1622  private   4,4 MiB  ws  34,4 MiB  gdi  16  user  13  handles  217  threads  3
+     6,0 min  long    cycles  1628  private   4,4 MiB  ws  34,4 MiB  gdi  16  user  13  handles  217  threads  3
+     6,5 min  long    cycles  1634  private   4,4 MiB  ws  34,4 MiB  gdi  16  user  13  handles  217  threads  3
+     7,0 min  long    cycles  1639  private   4,3 MiB  ws  33,7 MiB  gdi  16  user  13  handles  217  threads  1
+     7,5 min  long    cycles  1645  private   4,3 MiB  ws  18,7 MiB  gdi  16  user  13  handles  217  threads  1
+     8,1 min  long    cycles  1651  private   4,3 MiB  ws  34,4 MiB  gdi  16  user  13  handles  217  threads  1
+     8,6 min  long    cycles  1657  private   4,3 MiB  ws  18,8 MiB  gdi  16  user  14  handles  217  threads  1
+     9,1 min  long    cycles  1662  private   4,3 MiB  ws  18,8 MiB  gdi  16  user  13  handles  217  threads  1
+     9,6 min  long    cycles  1668  private   4,3 MiB  ws  18,8 MiB  gdi  16  user  13  handles  217  threads  1
+    10,1 min  long    cycles  1674  private   2,5 MiB  ws  33,2 MiB  gdi  16  user  14  handles  217  threads  3
+    10,6 min  long    cycles  1679  private   4,3 MiB  ws  18,8 MiB  gdi  16  user  13  handles  217  threads  3
+    11,1 min  long    cycles  1685  private   4,3 MiB  ws  18,9 MiB  gdi  16  user  13  handles  217  threads  3
+    11,6 min  long    cycles  1690  private   4,3 MiB  ws  18,9 MiB  gdi  16  user  13  handles  217  threads  1
+    12,1 min  long    cycles  1696  private   4,3 MiB  ws  18,9 MiB  gdi  16  user  13  handles  217  threads  1
+    12,6 min  long    cycles  1702  private   4,3 MiB  ws  18,9 MiB  gdi  16  user  13  handles  217  threads  1
+    13,1 min  long    cycles  1707  private   4,3 MiB  ws  19,2 MiB  gdi  16  user  13  handles  217  threads  1
+    13,6 min  long    cycles  1713  private   3,7 MiB  ws  18,6 MiB  gdi  16  user  13  handles  217  threads  1
+    14,1 min  long    cycles  1719  private   2,4 MiB  ws  17,6 MiB  gdi  16  user  14  handles  217  threads  1
+    14,6 min  long    cycles  1724  private   4,6 MiB  ws    35 MiB  gdi  16  user  13  handles  217  threads  1
+    15,1 min  long    cycles  1730  private   4,5 MiB  ws  19,5 MiB  gdi  16  user  13  handles  217  threads  1
+    15,6 min  long    cycles  1735  private   3,6 MiB  ws  18,4 MiB  gdi  16  user  13  handles  217  threads  1
+    16,1 min  long    cycles  1741  private   3,6 MiB  ws  18,5 MiB  gdi  16  user  13  handles  217  threads  1
+    16,6 min  long    cycles  1747  private   3,6 MiB  ws  18,7 MiB  gdi  16  user  13  handles  217  threads  1
+    17,1 min  long    cycles  1752  private   3,6 MiB  ws  18,7 MiB  gdi  16  user  13  handles  217  threads  1
+    17,6 min  long    cycles  1758  private   3,6 MiB  ws  18,5 MiB  gdi  16  user  13  handles  217  threads  1
+    18,1 min  long    cycles  1764  private   3,6 MiB  ws  18,5 MiB  gdi  16  user  14  handles  217  threads  1
+    18,6 min  long    cycles  1769  private   3,6 MiB  ws  18,5 MiB  gdi  16  user  13  handles  217  threads  1
+    19,1 min  long    cycles  1775  private   4,6 MiB  ws  34,4 MiB  gdi  16  user  13  handles  217  threads  1
+    19,7 min  long    cycles  1781  private   4,6 MiB  ws  34,2 MiB  gdi  16  user  13  handles  217  threads  1
+    20,2 min  long    cycles  1786  private   4,5 MiB  ws  19,3 MiB  gdi  16  user  13  handles  217  threads  1
+    20,7 min  long    cycles  1792  private   3,6 MiB  ws  18,4 MiB  gdi  16  user  13  handles  217  threads  2
+    21,2 min  long    cycles  1798  private   3,7 MiB  ws    34 MiB  gdi  16  user  14  handles  217  threads  2
+    21,7 min  long    cycles  1803  private   3,6 MiB  ws  18,4 MiB  gdi  16  user  13  handles  217  threads  2
+    22,2 min  long    cycles  1809  private   3,6 MiB  ws  18,4 MiB  gdi  16  user  13  handles  217  threads  2
+    22,7 min  long    cycles  1815  private   3,6 MiB  ws  33,3 MiB  gdi  16  user  14  handles  217  threads  1
+    23,2 min  long    cycles  1820  private   3,6 MiB  ws  18,4 MiB  gdi  16  user  13  handles  217  threads  1
+    23,7 min  long    cycles  1826  private   3,6 MiB  ws  18,4 MiB  gdi  16  user  13  handles  217  threads  1
+    24,2 min  long    cycles  1832  private   2,4 MiB  ws  33,2 MiB  gdi  16  user  14  handles  217  threads  1
+    24,7 min  long    cycles  1837  private   3,6 MiB  ws  18,6 MiB  gdi  16  user  13  handles  217  threads  1
+    25,2 min  long    cycles  1843  private   4,6 MiB  ws  34,4 MiB  gdi  16  user  13  handles  217  threads  1
+    25,7 min  long    cycles  1849  private   4,6 MiB  ws  34,4 MiB  gdi  16  user  14  handles  217  threads  1
+    26,2 min  long    cycles  1854  private   3,6 MiB  ws  18,4 MiB  gdi  16  user  13  handles  217  threads  1
+    26,7 min  long    cycles  1860  private   3,6 MiB  ws  18,6 MiB  gdi  16  user  13  handles  217  threads  1
+    27,2 min  long    cycles  1866  private   3,6 MiB  ws  18,6 MiB  gdi  16  user  13  handles  217  threads  1
+    27,7 min  long    cycles  1871  private   3,6 MiB  ws  18,6 MiB  gdi  16  user  13  handles  217  threads  1
+    28,2 min  long    cycles  1877  private   3,6 MiB  ws    34 MiB  gdi  16  user  13  handles  217  threads  1
+    28,8 min  long    cycles  1883  private   4,5 MiB  ws  19,3 MiB  gdi  16  user  13  handles  217  threads  1
+    29,3 min  long    cycles  1889  private   3,6 MiB  ws    34 MiB  gdi  16  user  14  handles  217  threads  1
+    29,8 min  long    cycles  1894  private   3,6 MiB  ws    34 MiB  gdi  16  user  13  handles  217  threads  1
+    30,1 min  end     cycles  1897  private   3,6 MiB  ws    34 MiB  gdi  16  user  13  handles  217  threads  1
+  ok    kadr ran for the whole test
+  ok    no capture failed
+  captures saved: 1493  overlays cancelled: 404
+  samples: %TEMP%\kadr-soak.csv
+  private_mb first    4,4  last    3,6  max    4,6  trend   -1,40 per hour
+  ok    private_mb does not grow (first 4.4, last 3.6, allowed +1)
+  gdi        first     16  last     16  max     16  trend    0,00 per hour
+  ok    gdi does not grow (first 16, last 16, allowed +1)
+  user       first     13  last     13  max     14  trend    0,26 per hour
+  ok    user does not grow (first 13, last 13, allowed +1)
+  handles    first    217  last    217  max    217  trend    0,00 per hour
+  ok    handles does not grow (first 217, last 217, allowed +10)
+  threads    first      3  last      1  max      3  trend   -1,92 per hour
+  ok    threads does not grow (first 3, last 1, allowed +1)
+  ok    quits with code 0 after the soak
+
+all checks passed

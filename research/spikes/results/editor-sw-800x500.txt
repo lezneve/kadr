@@ -1,0 +1,45 @@
+run 0 sw 800x500: copy into section 0.7 ms, spawn 7.9 ms, start→first paint 71.7 ms (signalled true), child total 104 ms, exit 0
+    main: private 1.2 MiB, ws 6.2 MiB
+    section mapped, checksum matches
+    window 23.6 ms, d2d target 25.5 ms, bitmap upload 0.3 ms, first draw 3.1 ms, dwm flush 2.8 ms; main→visible 55.2 ms
+    first paint: private 8.5 MiB, ws 24.9 MiB
+    export without annotations: 1.9 ms, identical to source (rgb): true, alpha byte 255
+    export with blur + redact: 10.7 ms; pixels changed outside the two rects: 0; redact pixels not black: 0; blur variance 1564 → 544, edge roughness 4.2 → 0.3
+    blur rect pixels changed: 25000 of 25000; src row [127, 128, 130, 131, 252, 253, 255, 240] out row [127, 128, 130, 131, 252, 253, 255, 240]
+    after export: private 22.5 MiB, ws 37.0 MiB
+run 1 sw 800x500: copy into section 0.8 ms, spawn 4.9 ms, start→first paint 69.9 ms (signalled true), child total 103 ms, exit 0
+    main: private 1.2 MiB, ws 6.3 MiB
+    section mapped, checksum matches
+    window 20.3 ms, d2d target 28.1 ms, bitmap upload 0.3 ms, first draw 3.2 ms, dwm flush 5.8 ms; main→visible 57.6 ms
+    first paint: private 8.6 MiB, ws 24.9 MiB
+    export without annotations: 2.0 ms, identical to source (rgb): true, alpha byte 255
+    export with blur + redact: 10.8 ms; pixels changed outside the two rects: 0; redact pixels not black: 0; blur variance 1564 → 544, edge roughness 4.2 → 0.3
+    blur rect pixels changed: 25000 of 25000; src row [127, 128, 130, 131, 252, 253, 255, 240] out row [127, 128, 130, 131, 252, 253, 255, 240]
+    after export: private 22.1 MiB, ws 36.5 MiB
+run 2 sw 800x500: copy into section 0.6 ms, spawn 5.1 ms, start→first paint 70.0 ms (signalled true), child total 102 ms, exit 0
+    main: private 1.2 MiB, ws 6.3 MiB
+    section mapped, checksum matches
+    window 20.4 ms, d2d target 26.9 ms, bitmap upload 0.4 ms, first draw 3.1 ms, dwm flush 6.7 ms; main→visible 57.4 ms
+    first paint: private 8.6 MiB, ws 24.9 MiB
+    export without annotations: 2.0 ms, identical to source (rgb): true, alpha byte 255
+    export with blur + redact: 10.5 ms; pixels changed outside the two rects: 0; redact pixels not black: 0; blur variance 1564 → 544, edge roughness 4.2 → 0.3
+    blur rect pixels changed: 25000 of 25000; src row [127, 128, 130, 131, 252, 253, 255, 240] out row [127, 128, 130, 131, 252, 253, 255, 240]
+    after export: private 23.5 MiB, ws 36.9 MiB
+run 3 sw 800x500: copy into section 0.8 ms, spawn 5.5 ms, start→first paint 70.1 ms (signalled true), child total 103 ms, exit 0
+    main: private 1.2 MiB, ws 6.3 MiB
+    section mapped, checksum matches
+    window 19.0 ms, d2d target 26.8 ms, bitmap upload 0.5 ms, first draw 3.3 ms, dwm flush 7.3 ms; main→visible 56.9 ms
+    first paint: private 8.6 MiB, ws 24.9 MiB
+    export without annotations: 1.9 ms, identical to source (rgb): true, alpha byte 255
+    export with blur + redact: 10.5 ms; pixels changed outside the two rects: 0; redact pixels not black: 0; blur variance 1564 → 544, edge roughness 4.2 → 0.3
+    blur rect pixels changed: 25000 of 25000; src row [127, 128, 130, 131, 252, 253, 255, 240] out row [127, 128, 130, 131, 252, 253, 255, 240]
+    after export: private 21.9 MiB, ws 36.3 MiB
+run 4 sw 800x500: copy into section 0.6 ms, spawn 5.6 ms, start→first paint 70.6 ms (signalled true), child total 106 ms, exit 0
+    main: private 1.2 MiB, ws 6.3 MiB
+    section mapped, checksum matches
+    window 19.0 ms, d2d target 27.1 ms, bitmap upload 0.5 ms, first draw 3.6 ms, dwm flush 7.5 ms; main→visible 57.7 ms
+    first paint: private 8.6 MiB, ws 24.9 MiB
+    export without annotations: 2.5 ms, identical to source (rgb): true, alpha byte 255
+    export with blur + redact: 10.9 ms; pixels changed outside the two rects: 0; redact pixels not black: 0; blur variance 1564 → 544, edge roughness 4.2 → 0.3
+    blur rect pixels changed: 25000 of 25000; src row [127, 128, 130, 131, 252, 253, 255, 240] out row [127, 128, 130, 131, 252, 253, 255, 240]
+    after export: private 23.1 MiB, ws 36.6 MiB

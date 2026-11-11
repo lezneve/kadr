@@ -1,0 +1,529 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-11T16:43:25Z",
+  "title": "Design System: kadr",
+  "extensions": {
+    "colorMeta": {
+      "ground-dark": {
+        "role": "neutral",
+        "displayName": "Graphite Ground (dark)",
+        "canonical": "#1c1c1e",
+        "tonalRamp": [
+          "#1c1c1e",
+          "#242426",
+          "#2a2a2c",
+          "#2c2c2e",
+          "#3a3a3c",
+          "#5b5b60",
+          "#98989d",
+          "#a1a1a6"
+        ]
+      },
+      "raised-dark": {
+        "role": "neutral",
+        "displayName": "Raised Frame (dark)",
+        "canonical": "#242426",
+        "tonalRamp": [
+          "#1c1c1e",
+          "#242426",
+          "#2a2a2c",
+          "#2c2c2e",
+          "#3a3a3c",
+          "#5b5b60",
+          "#98989d",
+          "#a1a1a6"
+        ]
+      },
+      "hover-dark": {
+        "role": "neutral",
+        "displayName": "Hover Tint (dark)",
+        "canonical": "#2a2a2c",
+        "tonalRamp": [
+          "#1c1c1e",
+          "#242426",
+          "#2a2a2c",
+          "#2c2c2e",
+          "#3a3a3c",
+          "#5b5b60",
+          "#98989d",
+          "#a1a1a6"
+        ]
+      },
+      "cap-dark": {
+        "role": "neutral",
+        "displayName": "Keycap Grey (dark)",
+        "canonical": "#2c2c2e",
+        "tonalRamp": [
+          "#1c1c1e",
+          "#242426",
+          "#2a2a2c",
+          "#2c2c2e",
+          "#3a3a3c",
+          "#5b5b60",
+          "#98989d",
+          "#a1a1a6"
+        ]
+      },
+      "seg-on-dark": {
+        "role": "neutral",
+        "displayName": "Lifted Segment (dark)",
+        "canonical": "#3a3a3c",
+        "tonalRamp": [
+          "#1c1c1e",
+          "#242426",
+          "#2a2a2c",
+          "#2c2c2e",
+          "#3a3a3c",
+          "#5b5b60",
+          "#98989d",
+          "#a1a1a6"
+        ]
+      },
+      "ink-dark": {
+        "role": "primary",
+        "displayName": "Ink (dark)",
+        "canonical": "#f2f2f2",
+        "tonalRamp": [
+          "#3a3a3c",
+          "#5b5b60",
+          "#6e6e73",
+          "#98989d",
+          "#a1a1a6",
+          "#f0f0f2",
+          "#f2f2f2",
+          "#ffffff"
+        ]
+      },
+      "ink2-dark": {
+        "role": "neutral",
+        "displayName": "Quiet Ink (dark)",
+        "canonical": "#a1a1a6",
+        "tonalRamp": [
+          "#3a3a3c",
+          "#5b5b60",
+          "#6e6e73",
+          "#98989d",
+          "#a1a1a6",
+          "#f0f0f2",
+          "#f2f2f2",
+          "#ffffff"
+        ]
+      },
+      "ink3-dark": {
+        "role": "neutral",
+        "displayName": "Hint Ink (dark)",
+        "canonical": "#98989d",
+        "tonalRamp": [
+          "#3a3a3c",
+          "#5b5b60",
+          "#6e6e73",
+          "#98989d",
+          "#a1a1a6",
+          "#f0f0f2",
+          "#f2f2f2",
+          "#ffffff"
+        ]
+      },
+      "hair-dark": {
+        "role": "neutral",
+        "displayName": "Hairline (dark)",
+        "canonical": "rgba(242, 242, 242, 0.08)",
+        "tonalRamp": [
+          "rgba(242,242,242,0.04)",
+          "rgba(242,242,242,0.06)",
+          "rgba(242,242,242,0.08)",
+          "rgba(242,242,242,0.12)",
+          "rgba(242,242,242,0.16)",
+          "rgba(242,242,242,0.24)",
+          "rgba(242,242,242,0.32)",
+          "rgba(242,242,242,0.48)"
+        ]
+      },
+      "alert-dark": {
+        "role": "tertiary",
+        "displayName": "Problem Red (dark)",
+        "canonical": "#ff7b72",
+        "tonalRamp": [
+          "#4a1210",
+          "#7a1d19",
+          "#a82723",
+          "#c4302b",
+          "#e0524b",
+          "#ff7b72",
+          "#ffa39c",
+          "#ffd3cf"
+        ]
+      },
+      "ground-light": {
+        "role": "neutral",
+        "displayName": "Graphite Ground (light)",
+        "canonical": "#f5f5f6",
+        "tonalRamp": [
+          "#5b5b60",
+          "#6e6e73",
+          "#a1a1a6",
+          "#f0f0f2",
+          "#f5f5f6",
+          "#f2f2f4",
+          "#ffffff",
+          "#ffffff"
+        ]
+      },
+      "raised-light": {
+        "role": "neutral",
+        "displayName": "Raised Frame (light)",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#5b5b60",
+          "#6e6e73",
+          "#a1a1a6",
+          "#f0f0f2",
+          "#f5f5f6",
+          "#f2f2f4",
+          "#ffffff",
+          "#ffffff"
+        ]
+      },
+      "hover-light": {
+        "role": "neutral",
+        "displayName": "Hover Tint (light)",
+        "canonical": "#f2f2f4",
+        "tonalRamp": [
+          "#5b5b60",
+          "#6e6e73",
+          "#a1a1a6",
+          "#f0f0f2",
+          "#f5f5f6",
+          "#f2f2f4",
+          "#ffffff",
+          "#ffffff"
+        ]
+      },
+      "cap-light": {
+        "role": "neutral",
+        "displayName": "Keycap Grey (light)",
+        "canonical": "#f0f0f2",
+        "tonalRamp": [
+          "#5b5b60",
+          "#6e6e73",
+          "#a1a1a6",
+          "#f0f0f2",
+          "#f5f5f6",
+          "#f2f2f4",
+          "#ffffff",
+          "#ffffff"
+        ]
+      },
+      "seg-on-light": {
+        "role": "neutral",
+        "displayName": "Lifted Segment (light)",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#5b5b60",
+          "#6e6e73",
+          "#a1a1a6",
+          "#f0f0f2",
+          "#f5f5f6",
+          "#f2f2f4",
+          "#ffffff",
+          "#ffffff"
+        ]
+      },
+      "ink-light": {
+        "role": "primary",
+        "displayName": "Ink (light)",
+        "canonical": "#1d1d1f",
+        "tonalRamp": [
+          "#1c1c1c",
+          "#1d1d1f",
+          "#5b5b60",
+          "#6e6e73",
+          "#98989d",
+          "#a1a1a6",
+          "#f0f0f2",
+          "#f5f5f6"
+        ]
+      },
+      "ink2-light": {
+        "role": "neutral",
+        "displayName": "Quiet Ink (light)",
+        "canonical": "#5b5b60",
+        "tonalRamp": [
+          "#1c1c1c",
+          "#1d1d1f",
+          "#5b5b60",
+          "#6e6e73",
+          "#98989d",
+          "#a1a1a6",
+          "#f0f0f2",
+          "#f5f5f6"
+        ]
+      },
+      "ink3-light": {
+        "role": "neutral",
+        "displayName": "Hint Ink (light)",
+        "canonical": "#6e6e73",
+        "tonalRamp": [
+          "#1c1c1c",
+          "#1d1d1f",
+          "#5b5b60",
+          "#6e6e73",
+          "#98989d",
+          "#a1a1a6",
+          "#f0f0f2",
+          "#f5f5f6"
+        ]
+      },
+      "hair-light": {
+        "role": "neutral",
+        "displayName": "Hairline (light)",
+        "canonical": "rgba(28, 28, 31, 0.10)",
+        "tonalRamp": [
+          "rgba(28,28,31,0.04)",
+          "rgba(28,28,31,0.06)",
+          "rgba(28,28,31,0.10)",
+          "rgba(28,28,31,0.14)",
+          "rgba(28,28,31,0.18)",
+          "rgba(28,28,31,0.26)",
+          "rgba(28,28,31,0.34)",
+          "rgba(28,28,31,0.50)"
+        ]
+      },
+      "alert-light": {
+        "role": "tertiary",
+        "displayName": "Problem Red (light)",
+        "canonical": "#c4302b",
+        "tonalRamp": [
+          "#4a1210",
+          "#7a1d19",
+          "#a82723",
+          "#c4302b",
+          "#e0524b",
+          "#ff7b72",
+          "#ffa39c",
+          "#ffd3cf"
+        ]
+      },
+      "overlay-mark": {
+        "role": "neutral",
+        "displayName": "Overlay White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "#1c1c1c",
+          "#3a3a3c",
+          "#5b5b60",
+          "#98989d",
+          "#a1a1a6",
+          "#f0f0f2",
+          "#f5f5f6",
+          "#ffffff"
+        ]
+      },
+      "tray-ink-light-taskbar": {
+        "role": "neutral",
+        "displayName": "Tray Ink on Light Taskbar",
+        "canonical": "#1c1c1c",
+        "tonalRamp": [
+          "#1c1c1c",
+          "#3a3a3c",
+          "#5b5b60",
+          "#98989d",
+          "#a1a1a6",
+          "#f0f0f2",
+          "#f5f5f6",
+          "#ffffff"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "title": {
+        "displayName": "Title",
+        "purpose": "the word \"settings\" at the top of the window. one per window."
+      },
+      "head": {
+        "displayName": "Head",
+        "purpose": "group names, lowercase, quiet ink, 8 px in from the group edge."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "row labels."
+      },
+      "small": {
+        "displayName": "Small",
+        "purpose": "keycap and segment labels, folder path, hints, notes, errors."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "the file name pattern and its next-file preview only."
+      },
+      "overlay": {
+        "displayName": "Overlay",
+        "purpose": "size label and hint on the region overlay (plain Segoe UI via gdi)."
+      }
+    },
+    "shadows": [],
+    "motion": [],
+    "breakpoints": [],
+    "cropMarks": [
+      {
+        "name": "settings-row",
+        "stroke": "2px",
+        "arm": "10px",
+        "offset": "4px inside the row",
+        "color": "ink of the active theme",
+        "purpose": "keyboard focus on one row; replaces a focus ring."
+      },
+      {
+        "name": "region-overlay",
+        "stroke": "2px",
+        "arm": "14px",
+        "offset": "2px gap outside the 1px white selection border",
+        "color": "#ffffff",
+        "purpose": "corners of the selection being dragged."
+      },
+      {
+        "name": "tray-viewfinder",
+        "stroke": "size/10, min 2px",
+        "arm": "size*3/8",
+        "offset": "margin size/16",
+        "centreDot": "size/8, min 2px",
+        "color": "#ffffff on dark taskbar, #1c1c1c on light",
+        "purpose": "tray and window icon at the exact small-icon size."
+      }
+    ],
+    "overlay": {
+      "dim": "screen brightness kept at 140/256",
+      "border": "1px white, scaled by dpi",
+      "pillPadding": "8px 4px",
+      "labelGap": "10px above the selection, inside its top edge when clipped",
+      "hintTop": "24px below the monitor top, centred",
+      "transitions": "dwm transitions disabled, square corners"
+    },
+    "titleBar": {
+      "immersiveDarkMode": "dwm attribute 20 follows the theme",
+      "caption": "dwm attribute 35 = ground",
+      "captionText": "dwm attribute 36 = ink"
+    }
+  },
+  "components": [
+    {
+      "name": "Group with rows",
+      "kind": "card",
+      "refersTo": "group",
+      "description": "a raised rounded surface of 44 px rows, label left and control right, inset hairline between rows; dark theme. an unset hotkey reads \"off\" in hint ink.",
+      "html": "<div class=\"ds-wrap\"><div class=\"ds-head\">saving</div><div class=\"ds-group\"><div class=\"ds-row\" tabindex=\"0\"><span>folder</span><span class=\"ds-path\">pictures\\kadr <svg width=\"6\" height=\"9\" viewBox=\"0 0 6 9\" fill=\"none\"><path d=\"M1 0.5 L4.5 4.5 L1 8.5\" stroke=\"#a1a1a6\" stroke-width=\"1.25\"/></svg></span></div><div class=\"ds-row\" tabindex=\"0\"><span>capture screen</span><span class=\"ds-path\">off</span></div></div></div>",
+      "css": ".ds-wrap { background: #1c1c1e; padding: 16px 24px; font-family: 'Segoe UI Variable Text', 'Segoe UI', sans-serif; } .ds-head { color: #a1a1a6; font-size: 12px; font-weight: 500; height: 24px; line-height: 20px; padding-left: 8px; } .ds-group { background: #242426; border: 1px solid rgba(242,242,242,0.08); border-radius: 12px; overflow: hidden; } .ds-row { display: flex; align-items: center; justify-content: space-between; height: 44px; padding: 0 16px; color: #f2f2f2; font-size: 13px; outline: none; } .ds-row + .ds-row { background-image: linear-gradient(rgba(242,242,242,0.08),rgba(242,242,242,0.08)); background-size: calc(100% - 32px) 1px; background-position: 16px 0; background-repeat: no-repeat; } .ds-row:hover { background-color: #2a2a2c; } .ds-row:active { background-color: #2c2c2e; } .ds-path { color: #a1a1a6; font-size: 12px; display: inline-flex; align-items: center; gap: 8px; } .ds-row:last-child .ds-path { color: #98989d; }"
+    },
+    {
+      "name": "Focused row with crop marks",
+      "kind": "custom",
+      "refersTo": "row",
+      "description": "the signature: four ink crop marks (2 px stroke, 10 px arm, 4 px inset) on the focused row, plus its one hint line.",
+      "html": "<div class=\"ds-frame\"><div class=\"ds-focus\" tabindex=\"0\"><span>capture window</span><span class=\"ds-right\"><span class=\"ds-hint\">enter to change</span><span class=\"ds-cap\">alt</span><span class=\"ds-cap\">printscreen</span></span></div></div>",
+      "css": ".ds-frame { background: #242426; padding: 0; font-family: 'Segoe UI Variable Text', 'Segoe UI', sans-serif; } .ds-focus { position: relative; display: flex; align-items: center; justify-content: space-between; height: 44px; padding: 0 16px; color: #f2f2f2; font-size: 13px; outline: none; --m: #f2f2f2; background: linear-gradient(var(--m),var(--m)) 4px 4px/10px 2px, linear-gradient(var(--m),var(--m)) 4px 4px/2px 10px, linear-gradient(var(--m),var(--m)) calc(100% - 4px) 4px/10px 2px, linear-gradient(var(--m),var(--m)) calc(100% - 4px) 4px/2px 10px, linear-gradient(var(--m),var(--m)) 4px calc(100% - 4px)/10px 2px, linear-gradient(var(--m),var(--m)) 4px calc(100% - 4px)/2px 10px, linear-gradient(var(--m),var(--m)) calc(100% - 4px) calc(100% - 4px)/10px 2px, linear-gradient(var(--m),var(--m)) calc(100% - 4px) calc(100% - 4px)/2px 10px; background-repeat: no-repeat; } .ds-right { display: inline-flex; align-items: center; gap: 4px; } .ds-hint { color: #98989d; font-size: 12px; margin-right: 8px; } .ds-cap { display: inline-flex; align-items: center; height: 24px; padding: 0 8px; background: #2c2c2e; border: 1px solid rgba(242,242,242,0.08); border-radius: 6px; font-size: 12px; color: #f2f2f2; }"
+    },
+    {
+      "name": "Keycaps",
+      "kind": "chip",
+      "refersTo": "keycap",
+      "description": "one cap per key, lowercase names; the recording state edges the caps in quiet ink and shows the instruction note.",
+      "html": "<div class=\"ds-kc-wrap\"><div class=\"ds-kc-line\"><span class=\"ds-kc\">ctrl</span><span class=\"ds-kc\">shift</span><span class=\"ds-kc\">printscreen</span></div><div class=\"ds-kc-line\"><span class=\"ds-kc ds-kc-live\">ctrl</span><span class=\"ds-kc ds-kc-live\">printscreen</span></div><div class=\"ds-kc-note\">press a new combination · esc keeps the old one · backspace turns it off</div></div>",
+      "css": ".ds-kc-wrap { background: #242426; padding: 12px 16px; font-family: 'Segoe UI Variable Text', 'Segoe UI', sans-serif; } .ds-kc-line { display: flex; gap: 4px; margin-bottom: 8px; } .ds-kc { display: inline-flex; align-items: center; height: 24px; padding: 0 8px; background: #2c2c2e; border: 1px solid rgba(242,242,242,0.08); border-radius: 6px; font-size: 12px; color: #f2f2f2; } .ds-kc-live { border-color: #a1a1a6; } .ds-kc-note { color: #98989d; font-size: 12px; }"
+    },
+    {
+      "name": "Segmented control",
+      "kind": "button",
+      "refersTo": "segment-track",
+      "description": "send to: clipboard, file, both. the selected segment lifts a tone; no accent.",
+      "html": "<div class=\"ds-seg-wrap\"><div class=\"ds-seg-track\" role=\"radiogroup\"><button class=\"ds-seg\" role=\"radio\" aria-checked=\"false\">clipboard</button><button class=\"ds-seg\" role=\"radio\" aria-checked=\"false\">file</button><button class=\"ds-seg ds-seg-on\" role=\"radio\" aria-checked=\"true\">both</button></div></div>",
+      "css": ".ds-seg-wrap { background: #242426; padding: 8px 16px; } .ds-seg-track { display: inline-flex; padding: 2px; background: #2c2c2e; border-radius: 8px; } .ds-seg { height: 28px; padding: 0 12px; border: none; background: transparent; color: #a1a1a6; font-family: 'Segoe UI Variable Text', 'Segoe UI', sans-serif; font-size: 12px; border-radius: 6px; cursor: default; } .ds-seg:hover { color: #f2f2f2; } .ds-seg-on { background: #3a3a3c; color: #f2f2f2; }"
+    },
+    {
+      "name": "Switch",
+      "kind": "button",
+      "refersTo": "switch-on",
+      "description": "start with windows. on: ink track, raised knob. off: hint-ink outline, quiet-ink knob. no animation.",
+      "html": "<div class=\"ds-sw-wrap\"><button class=\"ds-sw\" role=\"switch\" aria-checked=\"false\" aria-label=\"start with windows\"><span class=\"ds-knob\"></span></button><button class=\"ds-sw ds-sw-on\" role=\"switch\" aria-checked=\"true\" aria-label=\"start with windows\"><span class=\"ds-knob\"></span></button></div>",
+      "css": ".ds-sw-wrap { background: #242426; padding: 12px 16px; display: flex; gap: 16px; } .ds-sw { position: relative; width: 36px; height: 20px; border-radius: 9999px; border: 1px solid #98989d; background: transparent; padding: 0; } .ds-sw .ds-knob { position: absolute; top: 3px; left: 3px; width: 12px; height: 12px; border-radius: 9999px; background: #a1a1a6; } .ds-sw-on { background: #f2f2f2; border-color: #f2f2f2; } .ds-sw-on .ds-knob { left: auto; right: 3px; background: #242426; }"
+    },
+    {
+      "name": "File name field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "mono pattern field with the next-file preview beneath; an invalid pattern replaces the preview in problem red.",
+      "html": "<div class=\"ds-fn\"><div class=\"ds-fn-line\"><span>file name</span><input class=\"ds-field\" value=\"kadr_%Y-%m-%d_%H-%M-%S\" aria-label=\"file name\"></div><div class=\"ds-preview\">next file&nbsp; kadr_2026-11-11_18-34-31.png</div><div class=\"ds-error\">cannot contain \"?\"</div></div>",
+      "css": ".ds-fn { background: #242426; padding: 0 16px 8px; font-family: 'Segoe UI Variable Text', 'Segoe UI', sans-serif; color: #f2f2f2; font-size: 13px; } .ds-fn-line { display: flex; align-items: center; justify-content: space-between; height: 44px; } .ds-field { width: 240px; height: 28px; box-sizing: border-box; padding: 0 8px; background: #2c2c2e; border: 1px solid rgba(242,242,242,0.08); border-radius: 6px; color: #f2f2f2; font-family: 'Cascadia Mono', Consolas, monospace; font-size: 12px; outline: none; } .ds-preview { color: #98989d; font-family: 'Cascadia Mono', Consolas, monospace; font-size: 12px; height: 24px; line-height: 24px; white-space: pre; } .ds-error { color: #ff7b72; font-size: 12px; height: 24px; line-height: 24px; }"
+    },
+    {
+      "name": "Overlay pill",
+      "kind": "custom",
+      "refersTo": "overlay-pill",
+      "description": "region overlay size label and hint: graphite pill over the dimmed screen, white 1 px border and outside crop marks around the selection.",
+      "html": "<div class=\"ds-ov\"><span class=\"ds-pill\">drag to select · esc to cancel</span><div class=\"ds-sel\"><span class=\"ds-pill ds-size\">640 × 360</span></div></div>",
+      "css": ".ds-ov { position: relative; background: #3a3f47; padding: 16px 24px 32px; } .ds-pill { display: inline-block; padding: 4px 8px; background: #1c1c1e; color: #f2f2f2; border-radius: 3px; font-family: 'Segoe UI', sans-serif; font-size: 12px; } .ds-sel { position: relative; margin-top: 40px; width: 220px; height: 90px; background: #6a7280; outline: 1px solid #ffffff; --w: #ffffff; } .ds-sel::before { content: ''; position: absolute; inset: -5px; background: linear-gradient(var(--w),var(--w)) 0 0/14px 2px, linear-gradient(var(--w),var(--w)) 0 0/2px 14px, linear-gradient(var(--w),var(--w)) 100% 0/14px 2px, linear-gradient(var(--w),var(--w)) 100% 0/2px 14px, linear-gradient(var(--w),var(--w)) 0 100%/14px 2px, linear-gradient(var(--w),var(--w)) 0 100%/2px 14px, linear-gradient(var(--w),var(--w)) 100% 100%/14px 2px, linear-gradient(var(--w),var(--w)) 100% 100%/2px 14px; background-repeat: no-repeat; pointer-events: none; } .ds-size { position: absolute; left: 0; top: -36px; }"
+    },
+    {
+      "name": "Viewfinder icon",
+      "kind": "custom",
+      "refersTo": "tray-ink-light-taskbar",
+      "description": "tray and window icon: four corner brackets and a centre dot, at the small-icon size (16 px shown).",
+      "html": "<div class=\"ds-vf\"><svg width=\"32\" height=\"32\" viewBox=\"0 0 16 16\" shape-rendering=\"crispEdges\" fill=\"#ffffff\"><rect x=\"1\" y=\"1\" width=\"6\" height=\"2\"/><rect x=\"1\" y=\"1\" width=\"2\" height=\"6\"/><rect x=\"9\" y=\"1\" width=\"6\" height=\"2\"/><rect x=\"13\" y=\"1\" width=\"2\" height=\"6\"/><rect x=\"1\" y=\"13\" width=\"6\" height=\"2\"/><rect x=\"1\" y=\"9\" width=\"2\" height=\"6\"/><rect x=\"9\" y=\"13\" width=\"6\" height=\"2\"/><rect x=\"13\" y=\"9\" width=\"2\" height=\"6\"/><rect x=\"7\" y=\"7\" width=\"2\" height=\"2\"/></svg></div>",
+      "css": ".ds-vf { display: inline-flex; padding: 12px; background: #1c1c1e; border-radius: 6px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Set of Frames",
+    "overview": "the settings window is a set of frames, and the frame you are editing is marked by four crop marks: the same corners the region overlay draws around a selection and the tray icon draws around its centre dot. one mark, three surfaces. everything else is quiet graphite that follows the windows app theme, so the marks are the only emphasis on screen.\n\ndensity is calm and native: one 520 px column, four groups (hotkeys, after capture, saving, general), each a raised rounded surface of 44 px rows with the label left and the control right. there is no accent hue, no shadow and no drawn motion. state is shown by ink weight, tone steps and the crop marks, never by colour, except for problems the user must act on.\n\nthe system refuses the windows-settings card stack where every row weighs the same and an accent colour decorates toggles.",
+    "keyCharacteristics": [
+      "graphite neutral ramp, dark and light, chosen from the windows `AppsUseLightTheme` setting; the title bar is painted in the same ramp.",
+      "ink on ground: selected and on states use ink or a lighter tone, never a hue.",
+      "crop marks on the focused row only; nothing else is emphasised.",
+      "keycaps for hotkeys, cascadia mono for file names.",
+      "flat: depth is two tones plus a hairline.",
+      "nothing kadr draws animates; the overlay also disables dwm transitions."
+    ],
+    "rules": [
+      {
+        "name": "The Ink-On-Ground Rule",
+        "body": "no accent hue. on, selected and focused states use ink, `seg-on` or the crop marks. the system accent is kept out too: the file name field moves the caret to the end on focus so tab never paints a system-accent selection.",
+        "section": "colors"
+      },
+      {
+        "name": "The Red-For-Action Rule",
+        "body": "confirmed by the user on 2026-11-11. red is held for conflicts and every error that needs the user's attention, and as built it appears in exactly these places: a hotkey taken by snipping tool (held under that row until resolved), a key that cannot be a hotkey, a combination already used by another kadr capture, a combination used by another app, an invalid file name (it replaces the next-file preview), and a failed start-with-windows change. instructions, hints and other informational text never use red; they stay in hint ink.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Sizes Rule",
+        "body": "everything inside the groups is 13 px or 12 px. hierarchy comes from ink role and weight, not from new sizes.",
+        "section": "typography"
+      },
+      {
+        "name": "The Literal Mono Rule",
+        "body": "cascadia mono is for text the machine will write verbatim (the file name pattern and its preview). nothing else is set in mono.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Frame Rule",
+        "body": "a frame is a tone and a hairline, never a shadow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** take every settings-window colour from the active theme's ramp, and paint the title bar with ground and ink so the graphite world reaches the window edge.",
+      "**Do** mark the focused frame with four crop marks (2 px stroke, 10 px arm, 4 px inset) plus at most one hint line, and emphasise nothing else.",
+      "**Do** show hotkeys as keycaps, one cap per key, lowercase names.",
+      "**Do** keep notes and hints to one 12 px line under the row, in hint ink; reserve problem red for the cases in The Red-For-Action Rule.",
+      "**Do** draw icons and indicators as geometry (the chevron, the viewfinder), sized to the dpi.",
+      "**Do** scale every logical value by the window's dpi; the overlay scales per monitor."
+    ],
+    "donts": [
+      "**Don't** introduce an accent hue, including the windows system accent, for selected, on or focused states.",
+      "**Don't** add shadows; depth is ground, raised and hairline.",
+      "**Don't** animate state changes in anything kadr draws; no fades, slides or transitions.",
+      "**Don't** put crop marks on more than one row at a time, or use them as decoration.",
+      "**Don't** use a text glyph as a stand-in for an icon.",
+      "**Don't** round the overlay window or fade it in; it must read as the screen itself."
+    ]
+  }
+}

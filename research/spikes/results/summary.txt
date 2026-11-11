@@ -1,0 +1,14 @@
+native-tray#1: ws avg 9,34 MiB, private avg 1,45 MiB, procs 1, orphan webview 0, host cpu 0 ms / 10 s
+tauri-tray-nowindow#1: ws avg 14,23 MiB, private avg 1,99 MiB, procs 1, orphan webview 0, host cpu 0 ms / 10 s
+tauri-window-open#1: ws avg 357,09 MiB, private avg 151,14 MiB, procs 7, orphan webview 0, host cpu 0 ms / 10 s
+tauri-after-close#1: ws avg 25,12 MiB, private avg 4,9 MiB, procs 1, orphan webview 0, host cpu 0 ms / 10 s
+native-tray#2: ws avg 8,53 MiB, private avg 1,39 MiB, procs 1, orphan webview 0, host cpu 0 ms / 10 s
+tauri-tray-nowindow#2: ws avg 11,19 MiB, private avg 1,92 MiB, procs 1, orphan webview 0, host cpu 0 ms / 10 s
+tauri-window-open#2: ws avg 331,1 MiB, private avg 141,99 MiB, procs 7, orphan webview 0, host cpu 0 ms / 10 s
+tauri-after-close#2: ws avg 25,11 MiB, private avg 4,9 MiB, procs 1, orphan webview 0, host cpu 0 ms / 10 s
+native-tray#3: ws avg 8,55 MiB, private avg 1,44 MiB, procs 1, orphan webview 0, host cpu 0 ms / 10 s
+tauri-tray-nowindow#3: ws avg 11,18 MiB, private avg 1,91 MiB, procs 1, orphan webview 0, host cpu 0 ms / 10 s
+tauri-window-open#3: ws avg 331,05 MiB, private avg 142,91 MiB, procs 7, orphan webview 0, host cpu 0 ms / 10 s
+tauri-after-close#3: ws avg 25,13 MiB, private avg 5,04 MiB, procs 1, orphan webview 0, host cpu 0 ms / 10 s
+
+[exited with code 0]
