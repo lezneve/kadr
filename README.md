@@ -4,7 +4,7 @@ screenshots, without the extra stuff.
 
 a small windows utility by lezneve. press a hotkey, select, paste or find the file. nothing else runs, renders or listens while you are not using it.
 
-**version 0.1.0**, the first release. windows 10/11, x64. free and open source (MIT). download: [releases](https://github.com/lezneve/kadr/releases).
+**version 0.1.1**. windows 10/11, x64. free and open source (MIT). download: [releases](https://github.com/lezneve/kadr/releases).
 
 ## what it does
 
@@ -17,18 +17,18 @@ a small windows utility by lezneve. press a hotkey, select, paste or find the fi
 each capture opens in the editor, at the place it was taken, 1:1. nothing is copied or saved until you say so:
 
 - `ctrl+c` copies it and closes the editor (no file is written)
-- `ctrl+s` saves it as a png in windows' screenshots folder (`pictures\screenshots`; the clipboard is left alone); a second `ctrl+s` without changes writes nothing new
+- `ctrl+s` saves it as a png in windows' screenshots folder (`pictures\screenshots`; the clipboard is left alone) and closes the editor; a short "saved" note shows where the capture was
 - `esc` closes it without exporting
 
-in the region overlay `ctrl+a` takes the whole monitor. while the editor is open, the rest of the screen stays darkened.
+in the region overlay `ctrl+a` takes the whole monitor; hold `ctrl` while dragging to move the selection instead of resizing it. while the editor is open, the rest of the screen stays darkened.
 
-in the editor you can draw on the capture: select (v), pen (p), line (l), rectangle (r), ellipse (e), highlighter (h), blur (b) and redact (x). shift makes squares and circles and keeps lines at 45°. with select you move a shape, drag a corner to resize it, and delete it with delete. `ctrl+z` / `ctrl+y` undo and redo.
+in the editor you can draw on the capture: select (v), pen (p), line (l), arrow (a), rectangle (r), ellipse (e), highlighter (h), blur (b), redact (x, an opaque filled rectangle) and the mouse pointer (m). shift makes squares and circles and keeps lines and arrows at 45°. the pointer tool puts the mouse pointer from the moment of the capture on the image (where it was, if that is inside); a click moves it, and select moves it too. with select you move a shape, drag a corner to resize it, and delete it with delete. `ctrl+z` / `ctrl+y` undo and redo.
 
-the dot on the toolbar opens a small style panel: seven colours (also keys 1–7), any colour through the windows colour dialog, an eyedropper that takes a colour from the capture (key i), and a width from 1 to 32 px with a preview at its real size (also `[` and `]`, or the mouse wheel over the toolbar). strokes (pen, line, rectangle, ellipse), the highlighter and redact each keep their own colour and width; blur has none. with a shape selected, the panel changes that shape. the last colours and widths are remembered in `%APPDATA%\kadr\editor.ini`.
+the dot on the toolbar opens a small style panel: seven colours (also keys 1–7), any colour through the windows colour dialog, an eyedropper that takes a colour from the capture (key i), and a width from 1 to 32 px with a preview at its real size (also `[` and `]`, or the mouse wheel over the toolbar). strokes (pen, line, arrow, rectangle, ellipse), the highlighter and redact each keep their own colour and width; blur has none. with a shape selected, the panel changes that shape. the last colours and widths are remembered in `%APPDATA%\kadr\editor.ini`.
 
 blur only makes text hard to read; to really hide something, use redact, an opaque fill.
 
-the editor stays open after saving (after copying too, with `close_after_copy = no` in settings.ini). the close button and esc close it at once, without a question: what is not copied or saved is gone. its small toolbar sits next to the capture and can be dragged; it stays inside the screen. every capture gets its own editor, and each one is gone, memory and all, when you close it.
+copy and save close the editor, with a short note ("copied", "saved · file name"). to keep it open, set `close_after_copy = no` or `close_after_save = no` in settings.ini; a second `ctrl+s` without changes then writes nothing new. the close button and esc close it at once, without a question: what is not copied or saved is gone. its small toolbar sits next to the capture and can be dragged; it stays inside the screen. every capture gets its own editor, and each one is gone, memory and all, when you close it.
 
 the quick modes are still there (settings › after capture): copy, save, or both right away, without the editor. nothing is overwritten: a second capture in the same second gets `_2`.
 
@@ -46,14 +46,14 @@ tray → settings. changes apply immediately; there is nothing to save.
 
 - hotkeys for the three captures (click a row, press the new combination; esc keeps the old one; backspace turns it off)
 - send to: editor (default), clipboard, file, or both
-- folder, a subfolder per month or day (`2026-11`, `2026-11-12`), and the file name pattern (`%Y %m %d %H %M %S`)
+- folder, a subfolder per month or day (`2026-11`, `2026-11-12`), and the file name pattern (`%Y %m %d %H %M %S`, and `%P` for the program you captured: `%P_%Y-%m-%d` gives `claude_2026-11-13`)
 - start with windows (off by default)
 
 settings live in `%APPDATA%\kadr\settings.ini`, a plain text file you can also edit by hand; kadr picks up changes when you save it.
 
 ## install
 
-download `kadr-0.1.0-setup.exe` from [releases](https://github.com/lezneve/kadr/releases) and run it. it installs kadr for you only, in `%LOCALAPPDATA%\Programs\kadr`, with a start menu entry and an entry in windows settings › apps. no administrator rights. two switches: start with windows (off by default) and start kadr now (on). running it again updates kadr and keeps your settings.
+download `kadr-0.1.1-setup.exe` from [releases](https://github.com/lezneve/kadr/releases) and run it. it installs kadr for you only, in `%LOCALAPPDATA%\Programs\kadr`, with a start menu entry and an entry in windows settings › apps. no administrator rights. two switches: start with windows (off by default) and start kadr now (on). running it again updates kadr and keeps your settings.
 
 portable use works too: copy `kadr.exe` anywhere and run it.
 

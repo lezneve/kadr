@@ -40,7 +40,25 @@ pub fn settings_path() -> io::Result<PathBuf> {
     Ok(known_folder(&FOLDERID_RoamingAppData)?.join(APP_NAME).join("settings.ini"))
 }
 
-/// expands %Y %m %d %H %M %S (and %% for a literal percent) with local time.
+/// the program the capture was taken from (the foreground window's process,
+/// `chrome`, `claude`), for %P in file names. set once per capture: by kadr
+/// before saving, and by the editor from its command line.
+static APP: std::sync::Mutex<String> = std::sync::Mutex::new(String::new());
+
+pub fn set_app(name: Option<&str>) {
+    let clean: String = name.unwrap_or("").chars().filter(|c| !r#"\/:*?"<>|%"#.contains(*c) && !c.is_control()).collect();
+    if let Ok(mut app) = APP.lock() {
+        *app = clean.trim().trim_end_matches('.').to_lowercase();
+    }
+}
+
+/// the program name for %P; `kadr` when it is not known.
+pub fn app() -> String {
+    APP.lock().ok().map(|a| a.clone()).filter(|a| !a.is_empty()).unwrap_or_else(|| crate::APP_NAME.to_string())
+}
+
+/// expands %Y %m %d %H %M %S with local time, %P with the program the capture
+/// came from (and %% for a literal percent).
 pub fn file_stem(pattern: &str) -> String {
     // SAFETY: no arguments, returns a value.
     let t = unsafe { GetLocalTime() };
@@ -58,6 +76,7 @@ pub fn file_stem(pattern: &str) -> String {
             Some('H') => out.push_str(&format!("{:02}", t.wHour)),
             Some('M') => out.push_str(&format!("{:02}", t.wMinute)),
             Some('S') => out.push_str(&format!("{:02}", t.wSecond)),
+            Some('P') => out.push_str(&app()),
             Some('%') => out.push('%'),
             Some(other) => {
                 out.push('%');
@@ -121,6 +140,10 @@ mod tests {
         assert_eq!(s.len(), "kadr_2026-11-11_14-03-22".len());
         assert!(s.starts_with("kadr_20"));
         assert_eq!(file_stem("100%% %q %"), "100% %q %");
+        set_app(Some("Materialgram"));
+        assert_eq!(file_stem("%P_x"), "materialgram_x");
+        set_app(None);
+        assert_eq!(file_stem("%P"), crate::APP_NAME);
     }
 
     #[test]

@@ -134,7 +134,7 @@ components:
 
 **Creative North Star: "The Set of Frames"**
 
-the settings window is a set of frames, and the frame you are editing is marked by four crop marks: the same corners the region overlay draws around a selection and the tray icon draws around its centre dot. one mark, three surfaces. everything else is quiet graphite that follows the windows app theme, so the marks are the only emphasis on screen.
+the settings window is a set of frames, and the frame you are editing is marked by four crop marks: the same corners the region overlay draws around a selection (and the editor keeps around the image) and the tray icon draws around its centre dot. one mark, three surfaces. everything else is quiet graphite that follows the windows app theme, so the marks are the only emphasis on screen.
 
 density is calm and native: one 520 px column, four groups (hotkeys, after capture, saving, general), each a raised rounded surface of 44 px rows with the label left and the control right. there is no accent hue, no shadow and no drawn motion. state is shown by ink weight, tone steps and the crop marks, never by colour, except for problems the user must act on.
 
@@ -224,7 +224,7 @@ softly rounded containers, small rounded controls, square crop marks.
 
 the crop mark is the recurring geometry: two square-ended strokes meeting at each corner, drawn in three sizes.
 - settings row: 2 px stroke, 10 px arm, 4 px inside the row edge, in ink.
-- region overlay: 2 px stroke, 14 px arm, 2 px gap outside the 1 px white selection border, in white.
+- region overlay and editor: 2 px stroke, 14 px arm, 2 px gap outside the 1 px white selection border, in white. the editor draws the overlay's frame unchanged around the image (in a window of its own, outside the pixels), so the hand-off does not move it.
 - tray icon: proportional to the small-icon size (stroke 1/10 of it, minimum 2; arm 3/8; margin 1/16) with a centre dot of 1/8 (minimum 2); white on a dark taskbar, `tray-ink-light-taskbar` on a light one. the same viewfinder is the window icon, redrawn when the theme changes.
 
 ## Components

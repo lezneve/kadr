@@ -28,6 +28,9 @@ pub struct Settings {
     /// editor: ctrl+c copies and closes (no question: the result is on the
     /// clipboard). off: the editor stays open after copying.
     pub close_after_copy: bool,
+    /// editor: ctrl+s saves and closes, with a short "saved" note on screen.
+    /// off: the editor stays open after saving.
+    pub close_after_save: bool,
 }
 
 // bare printscreen: on windows 11 snipping tool may take it even though
@@ -50,6 +53,7 @@ impl Default for Settings {
             file_name: DEFAULT_FILE_NAME.to_string(),
             subfolder: String::new(),
             close_after_copy: true,
+            close_after_save: true,
         }
     }
 }
@@ -107,6 +111,11 @@ impl Settings {
                     "yes" => Ok(s.close_after_copy = true),
                     "no" => Ok(s.close_after_copy = false),
                     _ => Err(format!("close_after_copy must be yes or no, not \"{value}\"")),
+                },
+                "close_after_save" => match value {
+                    "yes" => Ok(s.close_after_save = true),
+                    "no" => Ok(s.close_after_save = false),
+                    _ => Err(format!("close_after_save must be yes or no, not \"{value}\"")),
                 },
                 _ => Err(format!("unknown setting \"{key}\"")),
             };
@@ -191,7 +200,8 @@ pub fn to_text(s: &Settings) -> String {
         "# folder for saved captures. empty means pictures/kadr".into(),
         format!("save_folder = {folder}"),
         String::new(),
-        "# file name without .png. %Y %m %d %H %M %S become the date and time.".into(),
+        "# file name without .png. %Y %m %d %H %M %S become the date and time,".into(),
+        "# %P the program you captured (claude, chrome; kadr if unknown).".into(),
         "# if the name is taken, _2, _3 ... is added. nothing is overwritten.".into(),
         format!("file_name = {}", s.file_name),
         String::new(),
@@ -200,6 +210,8 @@ pub fn to_text(s: &Settings) -> String {
         String::new(),
         "# editor: yes = ctrl+c copies and closes the editor; no = it stays open".into(),
         format!("close_after_copy = {}", if s.close_after_copy { "yes" } else { "no" }),
+        "# editor: yes = ctrl+s saves and closes the editor; no = it stays open".into(),
+        format!("close_after_save = {}", if s.close_after_save { "yes" } else { "no" }),
     ];
     // crlf, so notepad and every other windows editor shows it as written.
     let mut text = lines.join("\r\n");

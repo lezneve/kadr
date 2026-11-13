@@ -12,7 +12,7 @@ param([int] $Points = 20000)
 $env:KADR_TEST_FRAME = '1'
 $WM_COMMAND = 0x0111; $MK_LBUTTON = 1; $MK_SHIFT = 4
 $ID_COPY = 1; $ID_SAVE = 2; $ID_CLOSE = 3; $ID_UNDO = 10; $ID_REDO = 11; $ID_DELETE = 12; $ID_TOOL = 100
-$T_SELECT = 0; $T_PEN = 1; $T_LINE = 2; $T_RECT = 3; $T_ELLIPSE = 4; $T_HIGHLIGHT = 5; $T_BLUR = 6; $T_REDACT = 7
+$T_SELECT = 0; $T_PEN = 1; $T_LINE = 2; $T_ARROW = 3; $T_RECT = 4; $T_ELLIPSE = 5; $T_HIGHLIGHT = 6; $T_BLUR = 7; $T_REDACT = 8; $T_CURSOR = 9
 Add-Type -ReferencedAssemblies System.Drawing @'
 using System; using System.Drawing; using System.Drawing.Imaging; using System.Collections.Generic;
 public static class Img {
@@ -127,7 +127,7 @@ $backup = Backup-Clipboard
 Write-Host "clipboard backed up ($($backup.formats) format(s)); contents are not read or printed"
 try {
 
-$p = Start-Kadr (Settings "save_folder = $caps`r`nclose_after_copy = no`r`n") -Extra '--test-private-clipboard'
+$p = Start-Kadr (Settings "save_folder = $caps`r`nclose_after_copy = no`r`nclose_after_save = no`r`n") -Extra '--test-private-clipboard'
 [void](Wait-Trace 'ready'); $h = Window-Of $p 'kadr.main'
 $OX = 300; $OY = 250
 

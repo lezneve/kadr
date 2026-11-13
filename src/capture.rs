@@ -204,6 +204,34 @@ pub fn foreground_window_rect() -> Option<Rect> {
     }
 }
 
+/// the program of the foreground window: its exe name without `.exe`
+/// (`claude`, `materialgram`). `None` for the desktop and the taskbar.
+pub fn foreground_app() -> Option<String> {
+    use windows::Win32::System::Threading::{OpenProcess, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION, QueryFullProcessImageNameW};
+    use windows::Win32::UI::WindowsAndMessaging::GetWindowThreadProcessId;
+    // SAFETY: the hwnd comes from the os; the process handle is closed here;
+    // the buffer length is passed with it.
+    unsafe {
+        let hwnd = GetForegroundWindow();
+        if hwnd.is_invalid() || is_shell_window(hwnd) {
+            return None;
+        }
+        let mut pid = 0u32;
+        GetWindowThreadProcessId(hwnd, Some(&mut pid));
+        if pid == 0 {
+            return None;
+        }
+        let process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid).ok()?;
+        let mut buf = [0u16; 1024];
+        let mut len = buf.len() as u32;
+        let ok = QueryFullProcessImageNameW(process, PROCESS_NAME_WIN32, windows::core::PWSTR(buf.as_mut_ptr()), &mut len);
+        let _ = windows::Win32::Foundation::CloseHandle(process);
+        ok.ok()?;
+        let path = std::path::PathBuf::from(String::from_utf16_lossy(&buf[..len as usize]));
+        path.file_stem().map(|s| s.to_string_lossy().into_owned())
+    }
+}
+
 fn is_shell_window(hwnd: HWND) -> bool {
     let mut buf = [0u16; 64];
     // SAFETY: buffer length is passed implicitly by the slice.
@@ -258,6 +286,126 @@ pub fn grab(rect: Rect) -> Result<Frame> {
     drop(selected);
     blit?;
     Ok(frame)
+}
+
+/// a mouse pointer as premultiplied bgra pixels, top-down, with its hotspot.
+pub struct CursorImage {
+    pub width: i32,
+    pub height: i32,
+    pub hot_x: i32,
+    pub hot_y: i32,
+    pub pixels: Vec<u8>,
+}
+
+/// the pointer as it was when a capture started: its image and where its
+/// hotspot was on the screen.
+pub struct CursorShot {
+    pub x: i32,
+    pub y: i32,
+    pub image: CursorImage,
+}
+
+/// the visible mouse pointer right now; `None` when it is hidden (or in the
+/// synthetic test mode, which never reads the real screen).
+pub fn grab_cursor() -> Option<CursorShot> {
+    use windows::Win32::UI::WindowsAndMessaging::{CURSOR_SHOWING, CURSORINFO, GetCursorInfo};
+    if std::env::var_os("KADR_TEST_FRAME").is_some() {
+        return None;
+    }
+    let mut ci = CURSORINFO { cbSize: size_of::<CURSORINFO>() as u32, ..Default::default() };
+    // SAFETY: an out-pointer of the documented size.
+    unsafe { GetCursorInfo(&mut ci) }.ok()?;
+    if ci.flags.0 & CURSOR_SHOWING.0 == 0 || ci.hCursor.is_invalid() {
+        return None;
+    }
+    let image = cursor_image(ci.hCursor)?;
+    Some(CursorShot { x: ci.ptScreenPos.x, y: ci.ptScreenPos.y, image })
+}
+
+/// draws `cursor` at its own size once on black and once on white; the two
+/// give its alpha (white − black = what shows through) and its premultiplied
+/// colour (the black copy). inverting pixels (the text i-beam) have no colour
+/// of their own: they become black with a white edge, visible on any page.
+pub fn cursor_image(cursor: windows::Win32::UI::WindowsAndMessaging::HCURSOR) -> Option<CursorImage> {
+    use windows::Win32::Graphics::Gdi::{BITMAP, GdiFlush, GetObjectW};
+    use windows::Win32::UI::WindowsAndMessaging::{DI_NORMAL, DrawIconEx, GetIconInfo, HICON, ICONINFO};
+    let icon = HICON(cursor.0);
+    let mut info = ICONINFO::default();
+    // SAFETY: the bitmaps GetIconInfo makes are ours and deleted here; the
+    // BITMAP out-pointer has the size passed with it.
+    let (w, h) = unsafe {
+        GetIconInfo(icon, &mut info).ok()?;
+        let mut bm = BITMAP::default();
+        let size = if !info.hbmColor.is_invalid() {
+            GetObjectW(HGDIOBJ(info.hbmColor.0), size_of::<BITMAP>() as i32, Some((&mut bm as *mut BITMAP).cast()));
+            (bm.bmWidth, bm.bmHeight)
+        } else {
+            // monochrome: the mask holds the and and the xor halves
+            GetObjectW(HGDIOBJ(info.hbmMask.0), size_of::<BITMAP>() as i32, Some((&mut bm as *mut BITMAP).cast()));
+            (bm.bmWidth, bm.bmHeight / 2)
+        };
+        for b in [info.hbmColor, info.hbmMask] {
+            if !b.is_invalid() {
+                let _ = DeleteObject(HGDIOBJ(b.0));
+            }
+        }
+        size
+    };
+    if w <= 0 || h <= 0 || w > 512 || h > 512 {
+        return None;
+    }
+    let black = Frame::new(w, h).ok()?;
+    let mut white = Frame::new(w, h).ok()?;
+    white.pixels_mut().fill(255);
+    {
+        let screen = ScreenDc::get().ok()?;
+        for f in [&black, &white] {
+            let mem = MemoryDc::compatible_with(screen.0).ok()?;
+            let _sel = mem.select(f.bitmap());
+            // SAFETY: a valid memory dc with the frame selected.
+            unsafe {
+                let _ = DrawIconEx(mem.0, 0, 0, icon, w, h, 0, None, DI_NORMAL);
+                let _ = GdiFlush();
+            }
+        }
+    }
+    let (uw, uh) = (w as usize, h as usize);
+    let mut pixels = vec![0u8; uw * uh * 4];
+    let mut inverted = vec![false; uw * uh];
+    let stride = black.stride();
+    for y in 0..uh {
+        for x in 0..uw {
+            let i = y * stride + x * 4;
+            let (b, wh) = (&black.pixels()[i..i + 3], &white.pixels()[i..i + 3]);
+            let o = (y * uw + x) * 4;
+            // brighter on black than on white: an inverting pixel
+            if (b[1] as i32) - (wh[1] as i32) > 128 {
+                inverted[y * uw + x] = true;
+                pixels[o + 3] = 255;
+                continue;
+            }
+            let diff = (wh[1] as i32 - b[1] as i32).max(wh[0] as i32 - b[0] as i32).max(wh[2] as i32 - b[2] as i32);
+            let alpha = (255 - diff).clamp(0, 255) as u8;
+            pixels[o] = b[0].min(alpha);
+            pixels[o + 1] = b[1].min(alpha);
+            pixels[o + 2] = b[2].min(alpha);
+            pixels[o + 3] = alpha;
+        }
+    }
+    // the white edge around inverting pixels
+    for y in 0..uh {
+        for x in 0..uw {
+            let o = (y * uw + x) * 4;
+            if inverted[y * uw + x] || pixels[o + 3] != 0 {
+                continue;
+            }
+            let near = (y.saturating_sub(1)..(y + 2).min(uh)).any(|ny| (x.saturating_sub(1)..(x + 2).min(uw)).any(|nx| inverted[ny * uw + nx]));
+            if near {
+                pixels[o..o + 4].copy_from_slice(&[255, 255, 255, 255]);
+            }
+        }
+    }
+    Some(CursorImage { width: w, height: h, hot_x: info.xHotspot as i32, hot_y: info.yHotspot as i32, pixels })
 }
 
 /// dc for the whole virtual screen, released on drop.

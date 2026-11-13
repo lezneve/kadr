@@ -1,5 +1,14 @@
 # changelog
 
+## 0.1.1 — 2026-11-13
+
+- the editor keeps the selection's frame: the same 1 px white border and crop marks as the region overlay stay around the image, so its edges are clear over a dark screen ([#1](https://github.com/lezneve/kadr/issues/1)). the frame is outside the image and never in the copied or saved picture
+- ctrl+s saves and closes the editor, like ctrl+c copies and closes; a short graphite note ("saved · file name", "copied") shows for a moment where the capture was. `close_after_save = no` keeps the editor open
+- arrow tool (a): a line with a filled head, in the stroke colour and width; shift keeps 45°
+- mouse pointer tool (m): puts the pointer from the moment of the capture on the image, where it was; a click or select moves it. the standard arrow when the pointer was hidden; the text i-beam is drawn black with a white edge
+- region overlay: hold ctrl while dragging to move the selection as it is
+- `%P` in the file name: the program you captured (`claude_2026-11-13_…`, `chrome_…`); `kadr` when unknown
+
 ## 0.1.0 — 2026-11-12
 
 the first release.

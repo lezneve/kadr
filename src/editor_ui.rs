@@ -78,6 +78,11 @@ const CLASS: PCWSTR = w!("kadr.editor");
 const BAR_CLASS: PCWSTR = w!("kadr.editor.bar");
 const STYLE_CLASS: PCWSTR = w!("kadr.editor.style");
 const DIM_CLASS: PCWSTR = w!("kadr.editor.dim");
+const FRAME_CLASS: PCWSTR = w!("kadr.editor.frame");
+const TOAST_CLASS: PCWSTR = w!("kadr.editor.toast");
+/// how long the "saved" / "copied" note stays after the editor closes.
+const TOAST_MS: u32 = 1200;
+const TIMER_TOAST: usize = 2;
 /// opacity of the black veil behind the editor: the same darkening as the
 /// overlay's dimmed copy (keep 140/256 of the brightness), so the hand-off
 /// from selecting to editing does not change the screen.
@@ -138,10 +143,13 @@ struct Gfx {
     round: ID2D1StrokeStyle,
     tile: ID2D1Bitmap,
     blur: ID2D1Effect,
+    /// the mouse pointer image of the pointer tool (premultiplied); none if
+    /// it could not be made, so the editor still paints without it.
+    pointer: Option<ID2D1Bitmap>,
 }
 
 impl Gfx {
-    fn new() -> Result<Gfx> {
+    fn new(pointer: &crate::capture::CursorImage) -> Result<Gfx> {
         // SAFETY: plain resource creation.
         unsafe {
             let factory: ID2D1Factory1 = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, None)?;
@@ -173,7 +181,15 @@ impl Gfx {
             let blur = dc.CreateEffect(&CLSID_D2D1GaussianBlur)?;
             blur.SetValue(D2D1_GAUSSIANBLUR_PROP_STANDARD_DEVIATION.0 as u32, D2D1_PROPERTY_TYPE_FLOAT, &BLUR_SIGMA.to_le_bytes())?;
             blur.SetValue(D2D1_GAUSSIANBLUR_PROP_BORDER_MODE.0 as u32, D2D1_PROPERTY_TYPE_ENUM, &1u32.to_le_bytes())?; // hard edge
-            Ok(Gfx { factory, target, dc, brush, round, tile, blur })
+            let pfmt = D2D1_PIXEL_FORMAT { format: DXGI_FORMAT_B8G8R8A8_UNORM, alphaMode: windows::Win32::Graphics::Direct2D::Common::D2D1_ALPHA_MODE_PREMULTIPLIED };
+            let pointer = target.CreateBitmap(
+                D2D_SIZE_U { width: pointer.width as u32, height: pointer.height as u32 },
+                Some(pointer.pixels.as_ptr().cast()),
+                pointer.width as u32 * 4,
+                &D2D1_BITMAP_PROPERTIES { pixelFormat: pfmt, dpiX: 96.0, dpiY: 96.0 },
+            )
+            .ok();
+            Ok(Gfx { factory, target, dc, brush, round, tile, blur, pointer })
         }
     }
 
@@ -248,15 +264,27 @@ struct Editor {
     /// the veil that darkens the rest of the screen while this editor is
     /// the active app; it owns the image window, so it stays right below it.
     dim: Cell<HWND>,
+    /// the white border and crop marks around the image, the same frame the
+    /// overlay drew around the selection: a window of their shape just
+    /// outside the image, so they are never part of the pixels.
+    frame: Cell<HWND>,
+    /// the note shown for a moment after copy or save closed the editor.
+    toast: Cell<HWND>,
+    toast_text: RefCell<String>,
+    /// the pointer tool's image: the pointer at capture time, or the standard
+    /// arrow when it was hidden; and where its hotspot was in the image.
+    pointer: crate::capture::CursorImage,
+    pointer_at: Option<Pt>,
 }
 
 pub fn run(args: Args, settings_path: Option<PathBuf>, private_clipboard: bool) -> i32 {
     let at = args.at;
     let size = at.width as usize * at.height as usize * 4;
+    let pointer_size = args.cursor.map_or(0, |c| (c[2] * c[3] * 4) as usize);
     let section = HANDLE(args.section as *mut _);
     let ready = HANDLE(args.ready as *mut _);
     // SAFETY: handles inherited from kadr, named on our command line.
-    let view = unsafe { MapViewOfFile(section, FILE_MAP_READ, 0, 0, size) };
+    let view = unsafe { MapViewOfFile(section, FILE_MAP_READ, 0, 0, size + pointer_size) };
     if view.Value.is_null() {
         crate::app::error_box(None, "kadr could not open the capture in the editor.");
         // SAFETY: as above; the event lets kadr stop waiting at once.
@@ -272,6 +300,12 @@ pub fn run(args: Args, settings_path: Option<PathBuf>, private_clipboard: bool) 
         // SAFETY: the view holds exactly `size` bytes, as kadr wrote them.
         f.pixels_mut().copy_from_slice(unsafe { std::slice::from_raw_parts(view.Value.cast::<u8>(), size) });
         f
+    });
+    // the pointer kadr saw, after the frame; else the standard arrow
+    let captured = args.cursor.map(|c| {
+        // SAFETY: kadr wrote `pointer_size` bytes after the frame.
+        let pixels = unsafe { std::slice::from_raw_parts(view.Value.cast::<u8>().add(size), pointer_size) }.to_vec();
+        (crate::capture::CursorImage { width: c[2], height: c[3], hot_x: c[4], hot_y: c[5], pixels }, Pt { x: c[0] as f32, y: c[1] as f32 })
     });
     // SAFETY: our own view and handle, unused from here on.
     unsafe {
@@ -290,6 +324,15 @@ pub fn run(args: Args, settings_path: Option<PathBuf>, private_clipboard: bool) 
         styles.highlight.width,
         hex_of(styles.redact.color)
     );
+    let (pointer, pointer_at) = match captured {
+        Some((image, at)) => (image, Some(at)),
+        None => {
+            // SAFETY: a shared system cursor, not freed.
+            let arrow = unsafe { LoadCursorW(None, IDC_ARROW) }.ok().and_then(crate::capture::cursor_image);
+            (arrow.unwrap_or(crate::capture::CursorImage { width: 1, height: 1, hot_x: 0, hot_y: 0, pixels: vec![0; 4] }), None)
+        }
+    };
+    trace!("editor {}: pointer {}x{}, {}", std::process::id(), pointer.width, pointer.height, if pointer_at.is_some() { "captured" } else { "standard arrow" });
     let result = (|| -> Result<i32> {
         let editor = Box::new(Editor {
             hwnd: Cell::new(HWND::default()),
@@ -323,6 +366,11 @@ pub fn run(args: Args, settings_path: Option<PathBuf>, private_clipboard: bool) 
             slider: Cell::new(None),
             custom: RefCell::new([windows::Win32::Foundation::COLORREF(0xffffff); 16]),
             dim: Cell::new(HWND::default()),
+            frame: Cell::new(HWND::default()),
+            toast: Cell::new(HWND::default()),
+            toast_text: RefCell::new(String::new()),
+            pointer,
+            pointer_at,
         });
         let editor = Box::into_raw(editor);
         // SAFETY: `editor` outlives both windows: it is reclaimed only after
@@ -370,6 +418,8 @@ unsafe fn show_and_loop(ed: &Editor, ready: HANDLE) -> Result<i32> {
             (BAR_CLASS, bar_proc, arrow),
             (STYLE_CLASS, style_proc, arrow),
             (DIM_CLASS, dim_proc, arrow),
+            (FRAME_CLASS, frame_proc, arrow),
+            (TOAST_CLASS, toast_proc, arrow),
         ] {
             RegisterClassW(&WNDCLASSW { lpfnWndProc: Some(proc_), hInstance: instance.into(), lpszClassName: class, hCursor: cursor.unwrap_or_default(), ..Default::default() });
         }
@@ -421,6 +471,28 @@ unsafe fn show_and_loop(ed: &Editor, ready: HANDLE) -> Result<i32> {
         let _ = DwmSetWindowAttribute(hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, (&on as *const i32).cast(), 4);
         let square = DWMWCP_DONOTROUND;
         let _ = DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, (&square as *const DWM_WINDOW_CORNER_PREFERENCE).cast(), 4);
+        // our frame is the border: no system hairline over the outer pixels
+        // (windows 11; elsewhere the call just fails). the shadow stays.
+        let none = windows::Win32::Foundation::COLORREF(0xFFFF_FFFE); // DWMWA_COLOR_NONE
+        let _ = DwmSetWindowAttribute(hwnd, windows::Win32::Graphics::Dwm::DWMWA_BORDER_COLOR, (&none as *const windows::Win32::Foundation::COLORREF).cast(), 4);
+        let frame = CreateWindowExW(
+            WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW,
+            FRAME_CLASS,
+            w!("kadr"),
+            WS_POPUP,
+            0,
+            0,
+            0,
+            0,
+            Some(hwnd), // owned: above the veil, hidden and destroyed with the image
+            None,
+            Some(instance.into()),
+            None,
+        )?;
+        let _ = DwmSetWindowAttribute(frame, DWMWA_TRANSITIONS_FORCEDISABLED, (&on as *const i32).cast(), 4);
+        let _ = DwmSetWindowAttribute(frame, DWMWA_WINDOW_CORNER_PREFERENCE, (&square as *const DWM_WINDOW_CORNER_PREFERENCE).cast(), 4);
+        ed.frame.set(frame);
+        ed.place_frame();
         for (kind, size) in [(ICON_SMALL, 16), (ICON_BIG, 32)] {
             let icon = ui::app_icon(size * ed.dpi.get() as i32 / 96);
             SendMessageW(hwnd, WM_SETICON, Some(WPARAM(kind as usize)), Some(LPARAM(icon.0 as isize)));
@@ -450,6 +522,8 @@ unsafe fn show_and_loop(ed: &Editor, ready: HANDLE) -> Result<i32> {
         let _ = ShowWindow(dim, SW_SHOWNOACTIVATE);
         let _ = ShowWindow(hwnd, SW_SHOW);
         let _ = UpdateWindow(hwnd);
+        let _ = ShowWindow(frame, SW_SHOWNOACTIVATE);
+        let _ = UpdateWindow(frame);
         let _ = ShowWindow(bar, SW_SHOWNOACTIVATE);
         let _ = UpdateWindow(bar);
         let _ = DwmFlush();
@@ -478,7 +552,7 @@ unsafe fn show_and_loop(ed: &Editor, ready: HANDLE) -> Result<i32> {
             key(Default::default(), VK_BACK.0, ID_DELETE),
             key(Default::default(), VK_ESCAPE.0, ID_ESCAPE),
         ];
-        for (i, k) in [b'V', b'P', b'L', b'R', b'E', b'H', b'B', b'X'].into_iter().enumerate() {
+        for (i, k) in [b'V', b'P', b'L', b'A', b'R', b'E', b'H', b'B', b'X', b'M'].into_iter().enumerate() {
             keys.push(key(Default::default(), k as u16, ID_TOOL + i as u16));
         }
         // 1..7: the preset colours; [ and ]: width; i: the eyedropper
@@ -540,6 +614,44 @@ impl Editor {
     fn dirty(&self) -> bool {
         let state = self.doc.borrow().state();
         state != 0 && !self.saved.borrow().iter().any(|(s, _)| *s == state)
+    }
+
+    /// puts the frame around the image where it is now, shaped for the dpi
+    /// of the monitor under its top-left corner (as the overlay measured it).
+    fn place_frame(&self) {
+        let frame = self.frame.get();
+        if frame.is_invalid() {
+            return;
+        }
+        let mut img = RECT::default();
+        // SAFETY: queries and changes of our own windows; the region is owned
+        // by the window once set, and freed here otherwise.
+        unsafe {
+            let _ = GetWindowRect(self.hwnd.get(), &mut img);
+            let dpi = crate::overlay::monitor_dpi(POINT { x: img.left, y: img.top });
+            let reach = crate::overlay::frame_reach(dpi);
+            let (w, h) = (img.right - img.left, img.bottom - img.top);
+            let sel = RECT { left: reach, top: reach, right: reach + w, bottom: reach + h };
+            use windows::Win32::Graphics::Gdi::{CombineRgn, CreateRectRgn, DeleteObject, HGDIOBJ, RGN_OR, SetWindowRgn};
+            let region = CreateRectRgn(0, 0, 0, 0);
+            for r in crate::overlay::frame_rects(sel, dpi) {
+                let part = CreateRectRgn(r.left, r.top, r.right, r.bottom);
+                let _ = CombineRgn(Some(region), Some(region), Some(part), RGN_OR);
+                let _ = DeleteObject(HGDIOBJ(part.0));
+            }
+            let _ = windows::Win32::UI::WindowsAndMessaging::SetWindowPos(
+                frame,
+                None,
+                img.left - reach,
+                img.top - reach,
+                w + 2 * reach,
+                h + 2 * reach,
+                windows::Win32::UI::WindowsAndMessaging::SWP_NOACTIVATE | windows::Win32::UI::WindowsAndMessaging::SWP_NOZORDER,
+            );
+            if SetWindowRgn(frame, Some(region), true) == 0 {
+                let _ = DeleteObject(HGDIOBJ(region.0));
+            }
+        }
     }
 
     fn work_area(&self) -> RECT {
@@ -607,7 +719,7 @@ impl Editor {
                 }
                 if slot.is_none() {
                     let t = Instant::now();
-                    *slot = Some(Gfx::new()?);
+                    *slot = Some(Gfx::new(&self.pointer)?);
                     trace!("editor {}: direct2d ready in {:.1} ms", Self::pid(), t.elapsed().as_secs_f64() * 1000.0);
                 }
                 let g = slot.as_ref().unwrap();
@@ -659,6 +771,12 @@ impl Editor {
             match shape {
                 Shape::Pen(points) | Shape::Highlight(points) => self.draw_stroke(g, points, style, clip),
                 Shape::Line(a, b) => g.target.DrawLine(v(*a), v(*b), g.color(style.color), style.width, &g.round),
+                Shape::Arrow(a, b) => self.draw_arrow(g, *a, *b, style),
+                Shape::Cursor(r) => {
+                    if let Some(b) = &g.pointer {
+                        g.target.DrawBitmap(b, Some(&rf(*r)), 1.0, D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR, None);
+                    }
+                }
                 Shape::Rect(r) => g.target.DrawRectangle(&rf(*r), g.color(style.color), style.width, None),
                 Shape::Ellipse(r) => {
                     let e = D2D1_ELLIPSE { point: Vector2 { X: (r.l + r.r) / 2.0, Y: (r.t + r.b) / 2.0 }, radiusX: r.width() / 2.0, radiusY: r.height() / 2.0 };
@@ -666,6 +784,25 @@ impl Editor {
                 }
                 Shape::Redact(r) => g.target.FillRectangle(&rf(*r), g.color(style.color)),
                 Shape::Blur(r) => self.draw_blur(g, *r, clip),
+            }
+        }
+    }
+
+    /// the shaft up into the head (so its round cap stays inside), then the
+    /// head as one filled triangle.
+    unsafe fn draw_arrow(&self, g: &Gfx, a: Pt, b: Pt, style: &Style) {
+        let (tip, l, r, base) = crate::annotate::arrow_head(a, b, style.width);
+        let into = Pt { x: (base.x * 2.0 + tip.x) / 3.0, y: (base.y * 2.0 + tip.y) / 3.0 };
+        // SAFETY: called between BeginDraw and EndDraw.
+        unsafe {
+            g.target.DrawLine(v(a), v(into), g.color(style.color), style.width, &g.round);
+            let Ok(path) = g.factory.CreatePathGeometry() else { return };
+            let Ok(sink) = path.Open() else { return };
+            sink.BeginFigure(v(tip), windows::Win32::Graphics::Direct2D::Common::D2D1_FIGURE_BEGIN_FILLED);
+            sink.AddLines(&[v(l), v(r)]);
+            sink.EndFigure(windows::Win32::Graphics::Direct2D::Common::D2D1_FIGURE_END_CLOSED);
+            if sink.Close().is_ok() {
+                g.target.FillGeometry(&path, g.color(style.color), None);
             }
         }
     }
@@ -808,7 +945,15 @@ impl Editor {
         match id {
             ID_COPY => self.copy(),
             ID_SAVE => {
-                self.save();
+                if self.save() && self.settings().close_after_save {
+                    let state = self.doc.borrow().state();
+                    let name = self.saved.borrow().iter().rev().find(|(s, _)| *s == state).map(|(_, p)| file_name(p));
+                    trace!("editor {}: closing after save", Self::pid());
+                    self.close_with_note(&match name {
+                        Some(n) => format!("saved · {n}"),
+                        None => "saved".to_string(),
+                    });
+                }
             }
             ID_CLOSE => self.request_close(),
             ID_UNDO => self.undo(false),
@@ -833,8 +978,37 @@ impl Editor {
         self.tool.set(tool);
         self.select(None);
         trace!("editor {}: tool {}", Self::pid(), tool.name());
+        // the pointer tool shows the pointer where it was, if that is in the
+        // image and none is placed yet; clicks then move it
+        if tool == Tool::Cursor
+            && self.pointer_shape().is_none()
+            && let Some(at) = self.pointer_at
+            && self.image_area().contains(at)
+        {
+            let shape = self.pointer_at_point(at);
+            let style = self.styles.borrow().for_tool(tool);
+            self.invalidate(shape.extent(&style));
+            let id = self.doc.borrow_mut().add(shape, style);
+            trace!("editor {}: add cursor {id} at {:.0},{:.0} -> state {}", Self::pid(), at.x, at.y, self.doc.borrow().state());
+        }
         self.redraw_bar();
         self.refresh_flyout();
+    }
+
+    /// the pointer shape with its hotspot at `p`.
+    fn pointer_at_point(&self, p: Pt) -> Shape {
+        let i = &self.pointer;
+        let (l, t) = (p.x - i.hot_x as f32, p.y - i.hot_y as f32);
+        Shape::Cursor(Area { l, t, r: l + i.width as f32, b: t + i.height as f32 })
+    }
+
+    /// the placed pointer, if any: (id, its hotspot now).
+    fn pointer_shape(&self) -> Option<(u64, Pt)> {
+        let doc = self.doc.borrow();
+        doc.items.iter().rev().find_map(|i| match i.shape {
+            Shape::Cursor(r) => Some((i.id, Pt { x: r.l + self.pointer.hot_x as f32, y: r.t + self.pointer.hot_y as f32 })),
+            _ => None,
+        })
     }
 
     fn select(&self, id: Option<u64>) {
@@ -932,23 +1106,96 @@ impl Editor {
         match result {
             Ok(()) => {
                 trace!("editor {}: copied {}x{} in {:.1} ms", Self::pid(), self.at.width, self.at.height, t.elapsed().as_secs_f64() * 1000.0);
-                let close = match &self.settings_path {
-                    Some(p) => Settings::load(p).0.close_after_copy,
-                    None => Settings::default().close_after_copy,
-                };
-                if close {
+                if self.settings().close_after_copy {
                     // the result is on the clipboard: no question about saving
                     trace!("editor {}: closing after copy", Self::pid());
-                    // SAFETY: our own window.
-                    unsafe {
-                        let _ = DestroyWindow(self.hwnd.get());
-                    }
+                    self.close_with_note("copied");
                     return;
                 }
                 self.set_status("copied", false);
             }
             Err(e) => self.fail(&format!("could not copy to the clipboard: {e}")),
         }
+    }
+
+    /// the settings file as it is now (a change in settings applies at once).
+    fn settings(&self) -> Settings {
+        match &self.settings_path {
+            Some(p) => Settings::load(p).0,
+            None => Settings::default(),
+        }
+    }
+
+    /// hides the editor and shows `text` in a small graphite note where the
+    /// image was; the editor closes when the note goes (TOAST_MS, or a click).
+    fn close_with_note(&self, text: &str) {
+        if !self.toast.get().is_invalid() {
+            return;
+        }
+        *self.toast_text.borrow_mut() = text.to_string();
+        let (w, h) = {
+            let fonts = self.fonts.borrow();
+            let tw = fonts.as_ref().map_or(200.0, |f| self.canvas.measure(text, &f.body));
+            (tw.ceil() as i32 + self.pxi(32), self.pxi(36))
+        };
+        let work = self.work_area();
+        let x = (self.at.x + (self.at.width - w) / 2).min(work.right - w).max(work.left);
+        let y = (self.at.y + (self.at.height - h) / 2).min(work.bottom - h).max(work.top);
+        // SAFETY: our own windows; the note gets the editor pointer like the
+        // toolbar and lives until the loop ends.
+        unsafe {
+            for win in [self.flyout.get(), self.bar.get(), self.frame.get(), self.dim.get(), self.hwnd.get()] {
+                if !win.is_invalid() {
+                    let _ = ShowWindow(win, windows::Win32::UI::WindowsAndMessaging::SW_HIDE);
+                }
+            }
+            let Ok(instance) = GetModuleHandleW(None) else {
+                let _ = DestroyWindow(self.hwnd.get());
+                return;
+            };
+            let toast = CreateWindowExW(
+                WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW | windows::Win32::UI::WindowsAndMessaging::WS_EX_TOPMOST,
+                TOAST_CLASS,
+                w!("kadr"),
+                WS_POPUP,
+                x,
+                y,
+                w,
+                h,
+                None,
+                None,
+                Some(instance.into()),
+                Some(self as *const Editor as *const _),
+            );
+            let Ok(toast) = toast else {
+                let _ = DestroyWindow(self.hwnd.get());
+                return;
+            };
+            self.toast.set(toast);
+            let round = DWMWCP_ROUND;
+            let _ = DwmSetWindowAttribute(toast, DWMWA_WINDOW_CORNER_PREFERENCE, (&round as *const DWM_WINDOW_CORNER_PREFERENCE).cast(), 4);
+            let on: i32 = 1;
+            let _ = DwmSetWindowAttribute(toast, DWMWA_TRANSITIONS_FORCEDISABLED, (&on as *const i32).cast(), 4);
+            let _ = ShowWindow(toast, SW_SHOWNOACTIVATE);
+            let _ = UpdateWindow(toast);
+            SetTimer(Some(toast), TIMER_TOAST, TOAST_MS, None);
+        }
+    }
+
+    fn paint_toast(&self, hdc: HDC) {
+        let mut r = RECT::default();
+        // SAFETY: a query of our own window.
+        unsafe {
+            let _ = windows::Win32::UI::WindowsAndMessaging::GetClientRect(self.toast.get(), &mut r);
+        }
+        let fonts = self.fonts.borrow();
+        let Some(fonts) = fonts.as_ref() else { return };
+        let text = self.toast_text.borrow();
+        // the overlay's pill: graphite ground, ink text, whatever the theme
+        self.canvas.paint(hdc, (r.right, r.bottom), (0, 0), |p| {
+            p.fill(r, ui::rgb(0x1c1c1e));
+            p.text_center(&text, &fonts.body, ui::frect(r), ui::rgb(0xf2f2f2));
+        });
     }
 
     /// true when the current state is on disk (now or before).
@@ -962,10 +1209,7 @@ impl Editor {
         }
         let t = Instant::now();
         // read the file each time, so a folder changed in settings applies
-        let settings = match &self.settings_path {
-            Some(p) => Settings::load(p).0,
-            None => Settings::default(),
-        };
+        let settings = self.settings();
         // memory at each step, so the peak of a save can be attributed
         trace!("editor {}: save: before compose, memory {}", Self::pid(), crate::memory_summary());
         let result = self.with_export(|f| {
@@ -1115,6 +1359,26 @@ impl Editor {
                     None => return,
                 }
             }
+        } else if tool == Tool::Cursor {
+            // one pointer per image: a click moves it there (or places it)
+            self.select(None);
+            match self.pointer_shape() {
+                Some((id, hot)) => {
+                    let before = self.doc.borrow().find(id).unwrap().shape.clone();
+                    *self.drag.borrow_mut() = Drag::Move { id, start: hot, before };
+                }
+                None => {
+                    let shape = self.pointer_at_point(p);
+                    *self.drawing.borrow_mut() = Some((shape, self.styles.borrow().for_tool(tool)));
+                    *self.drag.borrow_mut() = Drag::Draw { start: p };
+                }
+            }
+            // SAFETY: our own window.
+            unsafe {
+                SetCapture(self.hwnd.get());
+            }
+            self.mouse_drag(p, shift);
+            return;
         } else {
             self.select(None);
             let shape = match tool {
@@ -1146,6 +1410,13 @@ impl Editor {
                             drop(slot);
                             self.invalidate(seg);
                         }
+                    }
+                    Shape::Cursor(_) => {
+                        let old = shape.extent(style);
+                        *shape = self.pointer_at_point(p);
+                        let new = shape.extent(style);
+                        drop(slot);
+                        self.invalidate(old.union(new));
                     }
                     _ => {
                         let old = shape.extent(style);
@@ -1230,7 +1501,7 @@ impl Editor {
             let p = Pt { x: pt.x as f32, y: pt.y as f32 };
             match self.handle_at(p) {
                 Some((_, 0 | 2)) => IDC_SIZENWSE,
-                Some((_, 1 | 3)) if self.doc.borrow().find(self.selected.get().unwrap()).is_some_and(|i| !matches!(i.shape, Shape::Line(..))) => IDC_SIZENESW,
+                Some((_, 1 | 3)) if self.doc.borrow().find(self.selected.get().unwrap()).is_some_and(|i| !matches!(i.shape, Shape::Line(..) | Shape::Arrow(..))) => IDC_SIZENESW,
                 Some(_) => IDC_SIZEALL,
                 None if self.doc.borrow().hit(p, HIT_TOL).is_some() => IDC_SIZEALL,
                 None => IDC_ARROW,
@@ -1273,7 +1544,7 @@ impl Editor {
 
     /// x positions (logical) of the three separators and the status text.
     fn bar_layout() -> ([i32; 3], i32) {
-        let tools_end = 6 + 9 * 30 - 2;
+        let tools_end = 6 + (Tool::ALL.len() as i32 + 1) * 30 - 2;
         let s1 = tools_end + 5;
         let s2 = s1 + 4 + 60 - 2 + 5;
         let s3 = s2 + 4 + 60 - 2 + 5;
@@ -1438,6 +1709,10 @@ impl Editor {
                 p.fill_f(D2D_RECT_F { left: cx - 8.0 * s, top: cy + 4.0 * s, right: cx - 4.0 * s, bottom: cy + 8.0 * s }, c);
                 p.fill_f(D2D_RECT_F { left: cx + 4.0 * s, top: cy - 8.0 * s, right: cx + 8.0 * s, bottom: cy - 4.0 * s }, c);
             }
+            Button::Tool(Tool::Arrow) => {
+                poly(&[(-6.0, 6.0), (6.0, -6.0)], false);
+                poly(&[(-0.5, -6.0), (6.0, -6.0), (6.0, 0.5)], false);
+            }
             Button::Tool(Tool::Rect) => poly(&[(-7.0, -5.0), (7.0, -5.0), (7.0, 5.0), (-7.0, 5.0)], true),
             Button::Tool(Tool::Ellipse) => p.ellipse(at(0.0, 0.0), 7.0 * s, 5.5 * s, c, sw),
             Button::Tool(Tool::Highlighter) => {
@@ -1449,6 +1724,11 @@ impl Editor {
                     let a = [1.0, 0.6, 0.3, 0.6, 1.0, 0.6, 0.3, 0.6, 1.0][i];
                     p.fill_ellipse(at(x, y), 1.6 * s, [c[0], c[1], c[2], c[3] * a]);
                 }
+            }
+            Button::Tool(Tool::Cursor) => {
+                // the pointer with a click ring at its tip
+                poly(&[(-2.0, -5.0), (-2.0, 7.0), (1.0, 4.0), (6.0, 4.0)], true);
+                p.ellipse(at(-2.0, -5.0), 3.5 * s, 3.5 * s, [c[0], c[1], c[2], c[3] * 0.6], s);
             }
             Button::Tool(Tool::Redact) => {
                 poly(&[(-7.0, -5.0), (7.0, -5.0), (7.0, 5.0), (-7.0, 5.0)], true);
@@ -2003,6 +2283,12 @@ unsafe extern "system" fn image_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lpara
                 }
                 LRESULT(1)
             }
+            // win+shift+arrow can move the image to another monitor: the
+            // frame goes with it
+            windows::Win32::UI::WindowsAndMessaging::WM_MOVE => {
+                ed.place_frame();
+                LRESULT(0)
+            }
             WM_ENDSESSION => {
                 let _ = ShutdownBlockReasonDestroy(hwnd);
                 LRESULT(0)
@@ -2165,6 +2451,55 @@ unsafe extern "system" fn style_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lpara
                 let mut ps = PAINTSTRUCT::default();
                 let hdc = BeginPaint(hwnd, &mut ps);
                 ed.paint_flyout(hdc);
+                let _ = EndPaint(hwnd, &ps);
+                LRESULT(0)
+            }
+            _ => DefWindowProcW(hwnd, msg, wparam, lparam),
+        }
+    }
+}
+
+/// the note after copy or save: closes the editor when its time is up or on a
+/// click.
+unsafe extern "system" fn toast_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+    unsafe {
+        if msg == WM_NCCREATE {
+            store_editor(hwnd, lparam);
+            return DefWindowProcW(hwnd, msg, wparam, lparam);
+        }
+        let Some(ed) = editor_of(hwnd) else { return DefWindowProcW(hwnd, msg, wparam, lparam) };
+        match msg {
+            WM_MOUSEACTIVATE => LRESULT(MA_NOACTIVATE as isize),
+            WM_PAINT => {
+                let mut ps = PAINTSTRUCT::default();
+                let hdc = BeginPaint(hwnd, &mut ps);
+                ed.paint_toast(hdc);
+                let _ = EndPaint(hwnd, &ps);
+                LRESULT(0)
+            }
+            WM_TIMER | WM_LBUTTONDOWN if msg != WM_TIMER || wparam.0 == TIMER_TOAST => {
+                let _ = KillTimer(Some(hwnd), TIMER_TOAST);
+                let _ = DestroyWindow(hwnd);
+                let _ = DestroyWindow(ed.hwnd.get());
+                LRESULT(0)
+            }
+            _ => DefWindowProcW(hwnd, msg, wparam, lparam),
+        }
+    }
+}
+
+/// the frame around the image: white in the shape of its region; clicks on it
+/// fall through to the veil below.
+unsafe extern "system" fn frame_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+    unsafe {
+        match msg {
+            WM_MOUSEACTIVATE => LRESULT(MA_NOACTIVATE as isize),
+            WM_NCHITTEST => LRESULT(windows::Win32::UI::WindowsAndMessaging::HTTRANSPARENT as isize),
+            WM_PAINT => {
+                let mut ps = PAINTSTRUCT::default();
+                let hdc = BeginPaint(hwnd, &mut ps);
+                let white = windows::Win32::Graphics::Gdi::GetStockObject(windows::Win32::Graphics::Gdi::WHITE_BRUSH);
+                let _ = windows::Win32::Graphics::Gdi::FillRect(hdc, &ps.rcPaint, windows::Win32::Graphics::Gdi::HBRUSH(white.0));
                 let _ = EndPaint(hwnd, &ps);
                 LRESULT(0)
             }

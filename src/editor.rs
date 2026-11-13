@@ -26,7 +26,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 use windows::core::PCWSTR;
 
-use crate::capture::{Frame, Rect};
+use crate::capture::{CursorShot, Frame, Rect};
 use crate::trace;
 
 
@@ -39,9 +39,13 @@ pub struct Launched {
 }
 
 /// starts an editor for `frame`, which was captured at `at` on the screen.
-pub fn launch(frame: &Frame, at: Rect, settings: Option<&std::path::Path>, private_clipboard: bool) -> std::result::Result<Launched, String> {
+/// `cursor`: the pointer when the capture started; its pixels follow the
+/// frame's in the section and `--cursor` says where its hotspot is in the
+/// image (it may be outside).
+pub fn launch(frame: &Frame, at: Rect, cursor: Option<&CursorShot>, settings: Option<&std::path::Path>, private_clipboard: bool) -> std::result::Result<Launched, String> {
     let t = Instant::now();
-    let size = frame.byte_len();
+    let frame_size = frame.byte_len();
+    let size = frame_size + cursor.map_or(0, |c| c.image.pixels.len());
     let inherit = SECURITY_ATTRIBUTES { nLength: size_of::<SECURITY_ATTRIBUTES>() as u32, lpSecurityDescriptor: std::ptr::null_mut(), bInheritHandle: true.into() };
     // SAFETY: an anonymous pagefile-backed section of exactly `size` bytes;
     // the view is written once and unmapped before the child starts.
@@ -55,9 +59,12 @@ pub fn launch(frame: &Frame, at: Rect, settings: Option<&std::path::Path>, priva
         }
         // bgrx with the x byte set to 255: direct2d effects read it as alpha
         // (a zero there made the blur add to the image, research/editor.md).
-        let dst = std::slice::from_raw_parts_mut(view.Value.cast::<u32>(), size / 4);
+        let dst = std::slice::from_raw_parts_mut(view.Value.cast::<u32>(), frame_size / 4);
         for (d, s) in dst.iter_mut().zip(frame.pixels().chunks_exact(4)) {
             *d = u32::from_le_bytes([s[0], s[1], s[2], 0xff]);
+        }
+        if let Some(c) = cursor {
+            std::ptr::copy_nonoverlapping(c.image.pixels.as_ptr(), view.Value.cast::<u8>().add(frame_size), c.image.pixels.len());
         }
         let _ = UnmapViewOfFile(view);
         let ready = match CreateEventW(Some(&inherit), true, false, PCWSTR::null()) {
@@ -77,7 +84,13 @@ pub fn launch(frame: &Frame, at: Rect, settings: Option<&std::path::Path>, priva
             .arg("--ready")
             .arg((ready.0 as usize).to_string())
             .arg("--at")
-            .arg(format!("{},{},{},{}", at.x, at.y, at.width, at.height));
+            .arg(format!("{},{},{},{}", at.x, at.y, at.width, at.height))
+            .arg("--process")
+            .arg(crate::storage::app());
+        if let Some(c) = cursor {
+            let i = &c.image;
+            cmd.arg("--cursor").arg(format!("{},{},{},{},{},{}", c.x - at.x, c.y - at.y, i.width, i.height, i.hot_x, i.hot_y));
+        }
         if let Some(p) = settings {
             cmd.arg("--settings").arg(p);
         }
@@ -179,6 +192,17 @@ pub struct Args {
     pub section: usize,
     pub ready: usize,
     pub at: Rect,
+    /// the pointer at capture time: hotspot x, y in the image, width,
+    /// height, hotspot inside the pointer. its pixels follow the frame's.
+    pub cursor: Option<[i32; 6]>,
+}
+
+pub fn parse_cursor(v: &str) -> Option<[i32; 6]> {
+    let n: Vec<i32> = v.split(',').filter_map(|p| p.trim().parse().ok()).collect();
+    match n[..] {
+        [x, y, w, h, hx, hy] if (1..=512).contains(&w) && (1..=512).contains(&h) => Some([x, y, w, h, hx, hy]),
+        _ => None,
+    }
 }
 
 pub fn parse_at(v: &str) -> Option<Rect> {

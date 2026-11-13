@@ -163,6 +163,8 @@ struct State {
 /// the settings process: one window, a dialog-style message loop, exit on
 /// close. `app` is kadr's main window, when kadr is running.
 pub fn run(path: PathBuf, app: Option<HWND>) -> i32 {
+    // the "next file" preview: %P is the program of each capture
+    storage::set_app(Some("program"));
     let (current, _) = Settings::load(&path);
     let opened = open(app.unwrap_or_default(), path, current);
     trace!("settings window shown {:.1} ms after process start", crate::ms_since_process_start());

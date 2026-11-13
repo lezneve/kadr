@@ -11,7 +11,7 @@ param([string] $Out = '')
 $env:KADR_TEST_FRAME = '1'
 $WM_COMMAND = 0x0111; $MK_LBUTTON = 1; $WM_SET_COLOR = 0x8005; $WM_MOUSEWHEEL = 0x020A
 $ID_SAVE = 2; $ID_UNDO = 10; $ID_REDO = 11; $ID_STYLE = 14; $ID_PICK = 15; $ID_WIDTH_UP = 18; $ID_TOOL = 100; $ID_PRESET = 300; $ID_WIDTH = 400
-$T_SELECT = 0; $T_PEN = 1; $T_LINE = 2; $T_RECT = 3; $T_HIGHLIGHT = 5; $T_REDACT = 7
+$T_SELECT = 0; $T_PEN = 1; $T_LINE = 2; $T_RECT = 4; $T_HIGHLIGHT = 6; $T_REDACT = 8
 $P_RED = 0; $P_GREEN = 3; $P_BLUE = 4; $P_WHITE = 6
 Add-Type -ReferencedAssemblies System.Drawing @'
 using System; using System.Drawing; using System.Drawing.Imaging;
@@ -99,7 +99,7 @@ $backup = Backup-Clipboard
 Write-Host "clipboard backed up ($($backup.formats) format(s)); contents are not read or printed"
 try {
 
-$p = Start-Kadr (Settings "save_folder = $caps`r`nclose_after_copy = no`r`n") -Extra '--test-private-clipboard'
+$p = Start-Kadr (Settings "save_folder = $caps`r`nclose_after_copy = no`r`nclose_after_save = no`r`n") -Extra '--test-private-clipboard'
 [void](Wait-Trace 'ready'); $h = Window-Of $p 'kadr.main'
 
 Write-Host "`n1. colours and widths reach the exported pixels"

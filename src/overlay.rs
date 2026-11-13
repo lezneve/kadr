@@ -42,7 +42,8 @@ use crate::capture::{Frame, MemoryDc, Rect, ScreenDc};
 const CLASS: PCWSTR = w!("kadr.overlay");
 /// fraction of brightness kept outside the selection, out of 256.
 const DIM_KEEP: u8 = 140;
-const HINT: &str = "drag to select · ctrl+a: whole screen · esc to cancel";
+const HINT: &str = "drag to select · hold ctrl to move it · ctrl+a: whole screen · esc to cancel";
+const MK_CONTROL: usize = 0x0008;
 
 /// shows the overlay over `frame`, which covers `screen` (the virtual
 /// screen). returns the selected rectangle in frame coordinates, or `None`
@@ -151,6 +152,10 @@ struct State {
     /// virtual-screen origin, to turn client points into screen points.
     origin: POINT,
     anchor: Option<POINT>,
+    /// the dragged corner (the pointer, except while ctrl moves the whole
+    /// selection) and the pointer at the last move.
+    corner: POINT,
+    last: POINT,
     selection: Option<RECT>,
     hint: Option<RECT>,
     font: HFONT,
@@ -184,6 +189,8 @@ impl State {
                 height: screen.height,
                 origin: POINT { x: screen.x, y: screen.y },
                 anchor: None,
+                corner: POINT::default(),
+                last: POINT::default(),
                 selection: None,
                 hint: None,
                 font: HFONT::default(),
@@ -197,14 +204,7 @@ impl State {
 
     /// dpi of the monitor under a client point.
     fn dpi_at(&self, p: POINT) -> u32 {
-        let screen = POINT { x: p.x + self.origin.x, y: p.y + self.origin.y };
-        let (mut x, mut y) = (96, 96);
-        // SAFETY: out-pointers to locals.
-        unsafe {
-            let monitor = MonitorFromPoint(screen, MONITOR_DEFAULTTONEAREST);
-            let _ = GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &mut x, &mut y);
-        }
-        x.max(96)
+        monitor_dpi(POINT { x: p.x + self.origin.x, y: p.y + self.origin.y })
     }
 
     fn px(dpi: u32, value: i32) -> i32 {
@@ -282,27 +282,13 @@ impl State {
         (offset(r, x, y), text)
     }
 
-    fn border(&self, sel: RECT) -> i32 {
-        Self::px(self.dpi_at(POINT { x: sel.left, y: sel.top }), 1).max(1)
-    }
-
-    /// everything a selection draws: the frame, its border and the label.
-    fn mark_width(&self, sel: RECT) -> i32 {
-        Self::px(self.dpi_at(POINT { x: sel.left, y: sel.top }), 2).max(2)
-    }
-
-    fn mark_gap(&self, sel: RECT) -> i32 {
-        Self::px(self.dpi_at(POINT { x: sel.left, y: sel.top }), 2)
-    }
-
-    fn mark_len(&self, sel: RECT) -> i32 {
-        Self::px(self.dpi_at(POINT { x: sel.left, y: sel.top }), 14)
+    fn dpi_of(&self, sel: RECT) -> u32 {
+        self.dpi_at(POINT { x: sel.left, y: sel.top })
     }
 
     fn bounds(&mut self, sel: RECT) -> RECT {
-        let b = self.border(sel) + 2 * self.mark_width(sel) + self.mark_gap(sel);
         let (label, _) = self.label(sel);
-        union(inflate(sel, b), label)
+        union(inflate(sel, frame_reach(self.dpi_of(sel))), label)
     }
 }
 
@@ -344,6 +330,7 @@ extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM)
             WM_LBUTTONDOWN => {
                 let p = point(lparam);
                 st.anchor = Some(p);
+                (st.corner, st.last) = (p, p);
                 if let Some(hint) = st.hint.take() {
                     let _ = InvalidateRect(Some(hwnd), Some(&hint), false);
                 }
@@ -355,7 +342,22 @@ extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM)
             WM_MOUSEMOVE if wparam.0 & 0x0001 != 0 => {
                 if let Some(anchor) = st.anchor {
                     let p = point(lparam);
-                    let next = normalize(anchor, p, st.width, st.height);
+                    let anchor = if wparam.0 & MK_CONTROL != 0 {
+                        // ctrl: the selection moves with the pointer, as it
+                        // is, and stays on the screen
+                        let sel = normalize(anchor, st.corner, st.width, st.height);
+                        let dx = (p.x - st.last.x).clamp(-sel.left, st.width - sel.right);
+                        let dy = (p.y - st.last.y).clamp(-sel.top, st.height - sel.bottom);
+                        let moved = POINT { x: anchor.x + dx, y: anchor.y + dy };
+                        st.anchor = Some(moved);
+                        st.corner = POINT { x: st.corner.x + dx, y: st.corner.y + dy };
+                        moved
+                    } else {
+                        st.corner = p;
+                        anchor
+                    };
+                    st.last = p;
+                    let next = normalize(anchor, st.corner, st.width, st.height);
                     if st.selection != Some(next) {
                         if let Some(old) = st.selection {
                             let r = st.bounds(old);
@@ -373,7 +375,8 @@ extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM)
                     let _ = ReleaseCapture();
                     // the release point ends the selection, not the last move:
                     // a move generated after SetCapture can lag behind it.
-                    st.selection = Some(normalize(anchor, point(lparam), st.width, st.height));
+                    let end = if wparam.0 & MK_CONTROL != 0 { st.corner } else { point(lparam) };
+                    st.selection = Some(normalize(anchor, end, st.width, st.height));
                     match st.selection {
                         Some(s) if s.right - s.left >= 2 && s.bottom - s.top >= 2 => {
                             st.result = Some(Some(Rect::from_win(s)));
@@ -479,28 +482,9 @@ unsafe fn draw_selection(dc: HDC, st: &mut State, sel: RECT, clip: RECT) {
                 SRCCOPY,
             );
         }
-        let b = st.border(sel);
         let white = CreateSolidBrush(COLORREF(0x00ff_ffff));
-        let o = inflate(sel, b);
-        for strip in [
-            RECT { left: o.left, top: o.top, right: o.right, bottom: sel.top },
-            RECT { left: o.left, top: sel.bottom, right: o.right, bottom: o.bottom },
-            RECT { left: o.left, top: sel.top, right: sel.left, bottom: sel.bottom },
-            RECT { left: sel.right, top: sel.top, right: o.right, bottom: sel.bottom },
-        ] {
-            FillRect(dc, &strip, white);
-        }
-        // the signature: crop marks on the four corners, just outside the
-        // border. the same corners as the tray icon and the settings window.
-        let (len, w) = (st.mark_len(sel), st.mark_width(sel));
-        // a small gap, so they read as separate crop marks and not as a
-        // thicker corner of the border.
-        let m = inflate(sel, b + w + st.mark_gap(sel));
-        for (x, y, dx, dy) in [(m.left, m.top, 1, 1), (m.right, m.top, -1, 1), (m.left, m.bottom, 1, -1), (m.right, m.bottom, -1, -1)] {
-            let horizontal = RECT { left: x.min(x + dx * len), top: y.min(y + dy * w), right: x.max(x + dx * len), bottom: y.max(y + dy * w) };
-            let vertical = RECT { left: x.min(x + dx * w), top: y.min(y + dy * len), right: x.max(x + dx * w), bottom: y.max(y + dy * len) };
-            FillRect(dc, &horizontal, white);
-            FillRect(dc, &vertical, white);
+        for r in frame_rects(sel, st.dpi_of(sel)) {
+            FillRect(dc, &r, white);
         }
         let _ = DeleteObject(HGDIOBJ(white.0));
 
@@ -544,6 +528,46 @@ fn normalize(a: POINT, b: POINT, width: i32, height: i32) -> RECT {
     let (x0, x1) = (a.x.min(b.x).clamp(0, width), (a.x.max(b.x) + 1).clamp(0, width));
     let (y0, y1) = (a.y.min(b.y).clamp(0, height), (a.y.max(b.y) + 1).clamp(0, height));
     RECT { left: x0, top: y0, right: x1, bottom: y1 }
+}
+
+/// the frame around a selection of `sel` at `dpi`: a 1 px white border just
+/// outside it, then the signature, crop marks on the four corners a small gap
+/// further out (so they read as separate marks, not a thicker corner). the
+/// same corners as the tray icon and the settings window. four border strips,
+/// then a horizontal and a vertical arm per corner. the editor draws the same
+/// frame around the image, so the hand-off from selecting does not move it.
+pub fn frame_rects(sel: RECT, dpi: u32) -> [RECT; 12] {
+    let px = |v: i32| (v * dpi as i32 + 48) / 96;
+    let (b, w, gap, len) = (px(1).max(1), px(2).max(2), px(2), px(14));
+    let o = inflate(sel, b);
+    let mut out = [RECT::default(); 12];
+    out[0] = RECT { left: o.left, top: o.top, right: o.right, bottom: sel.top };
+    out[1] = RECT { left: o.left, top: sel.bottom, right: o.right, bottom: o.bottom };
+    out[2] = RECT { left: o.left, top: sel.top, right: sel.left, bottom: sel.bottom };
+    out[3] = RECT { left: sel.right, top: sel.top, right: o.right, bottom: sel.bottom };
+    let m = inflate(sel, b + w + gap);
+    for (i, (x, y, dx, dy)) in [(m.left, m.top, 1, 1), (m.right, m.top, -1, 1), (m.left, m.bottom, 1, -1), (m.right, m.bottom, -1, -1)].into_iter().enumerate() {
+        out[4 + 2 * i] = RECT { left: x.min(x + dx * len), top: y.min(y + dy * w), right: x.max(x + dx * len), bottom: y.max(y + dy * w) };
+        out[5 + 2 * i] = RECT { left: x.min(x + dx * w), top: y.min(y + dy * len), right: x.max(x + dx * w), bottom: y.max(y + dy * len) };
+    }
+    out
+}
+
+/// how far the frame of `frame_rects` reaches outside the selection.
+pub fn frame_reach(dpi: u32) -> i32 {
+    let px = |v: i32| (v * dpi as i32 + 48) / 96;
+    px(1).max(1) + 2 * px(2).max(2) + px(2)
+}
+
+/// effective dpi of the monitor under a screen point.
+pub fn monitor_dpi(screen: POINT) -> u32 {
+    let (mut x, mut y) = (96, 96);
+    // SAFETY: out-pointers to locals.
+    unsafe {
+        let monitor = MonitorFromPoint(screen, MONITOR_DEFAULTTONEAREST);
+        let _ = GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, &mut x, &mut y);
+    }
+    x.max(96)
 }
 
 fn inflate(r: RECT, by: i32) -> RECT {

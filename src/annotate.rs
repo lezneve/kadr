@@ -63,26 +63,32 @@ pub enum Tool {
     Select,
     Pen,
     Line,
+    Arrow,
     Rect,
     Ellipse,
     Highlighter,
     Blur,
     Redact,
+    /// places the mouse pointer from the capture (or the standard arrow).
+    Cursor,
 }
 
 impl Tool {
-    pub const ALL: [Tool; 8] = [Tool::Select, Tool::Pen, Tool::Line, Tool::Rect, Tool::Ellipse, Tool::Highlighter, Tool::Blur, Tool::Redact];
+    pub const ALL: [Tool; 10] =
+        [Tool::Select, Tool::Pen, Tool::Line, Tool::Arrow, Tool::Rect, Tool::Ellipse, Tool::Highlighter, Tool::Blur, Tool::Redact, Tool::Cursor];
 
     pub fn label(self) -> &'static str {
         match self {
             Tool::Select => "select · v",
             Tool::Pen => "pen · p",
             Tool::Line => "line · l",
+            Tool::Arrow => "arrow · a",
             Tool::Rect => "rectangle · r",
             Tool::Ellipse => "ellipse · e",
             Tool::Highlighter => "highlighter · h",
             Tool::Blur => "blur · b · not secure, use redact",
             Tool::Redact => "redact · x",
+            Tool::Cursor => "mouse pointer · m · click to place it",
         }
     }
 
@@ -91,26 +97,28 @@ impl Tool {
             Tool::Select => "select",
             Tool::Pen => "pen",
             Tool::Line => "line",
+            Tool::Arrow => "arrow",
             Tool::Rect => "rect",
             Tool::Ellipse => "ellipse",
             Tool::Highlighter => "highlighter",
             Tool::Blur => "blur",
             Tool::Redact => "redact",
+            Tool::Cursor => "cursor",
         }
     }
 
     /// which style this tool draws with; none for select and blur.
     pub fn slot(self) -> Option<Slot> {
         match self {
-            Tool::Pen | Tool::Line | Tool::Rect | Tool::Ellipse => Some(Slot::Stroke),
+            Tool::Pen | Tool::Line | Tool::Arrow | Tool::Rect | Tool::Ellipse => Some(Slot::Stroke),
             Tool::Highlighter => Some(Slot::Highlight),
             Tool::Redact => Some(Slot::Redact),
-            Tool::Select | Tool::Blur => None,
+            Tool::Select | Tool::Blur | Tool::Cursor => None,
         }
     }
 }
 
-/// the separate style settings: strokes (pen, line, rectangle, ellipse)
+/// the separate style settings: strokes (pen, line, arrow, rectangle, ellipse)
 /// share one; the highlighter keeps its own width and a fixed 40 % opacity;
 /// redact has a colour only. blur has none.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -244,22 +252,38 @@ pub enum Shape {
     Pen(Vec<Pt>),
     Highlight(Vec<Pt>),
     Line(Pt, Pt),
+    /// a line with a filled head at the second point.
+    Arrow(Pt, Pt),
     Rect(Area),
     Ellipse(Area),
     /// gaussian blur of the source image under the area. not secure.
     Blur(Area),
     /// opaque fill: the pixels under it are gone from the export.
     Redact(Area),
+    /// the mouse pointer image, drawn 1:1 into the area (its size is the
+    /// pointer's size; it only moves).
+    Cursor(Area),
+}
+
+/// the head of an arrow from `a` to `b` with stroke `width`: (tip, left,
+/// right, base). it grows with the width and shrinks on short arrows.
+pub fn arrow_head(a: Pt, b: Pt, width: f32) -> (Pt, Pt, Pt, Pt) {
+    let d = dist(a, b).max(0.001);
+    let (ux, uy) = ((b.x - a.x) / d, (b.y - a.y) / d);
+    let len = (width * 3.0 + 10.0).min(d * 0.9);
+    let half = len * 0.55;
+    let base = Pt { x: b.x - ux * len, y: b.y - uy * len };
+    (b, Pt { x: base.x - uy * half, y: base.y + ux * half }, Pt { x: base.x + uy * half, y: base.y - ux * half }, base)
 }
 
 impl Shape {
     /// the style slot this shape belongs to (none for blur).
     pub fn slot(&self) -> Option<Slot> {
         match self {
-            Shape::Pen(_) | Shape::Line(..) | Shape::Rect(_) | Shape::Ellipse(_) => Some(Slot::Stroke),
+            Shape::Pen(_) | Shape::Line(..) | Shape::Arrow(..) | Shape::Rect(_) | Shape::Ellipse(_) => Some(Slot::Stroke),
             Shape::Highlight(_) => Some(Slot::Highlight),
             Shape::Redact(_) => Some(Slot::Redact),
-            Shape::Blur(_) => None,
+            Shape::Blur(_) | Shape::Cursor(_) => None,
         }
     }
 
@@ -268,10 +292,12 @@ impl Shape {
             Shape::Pen(_) => "pen",
             Shape::Highlight(_) => "highlighter",
             Shape::Line(..) => "line",
+            Shape::Arrow(..) => "arrow",
             Shape::Rect(_) => "rect",
             Shape::Ellipse(_) => "ellipse",
             Shape::Blur(_) => "blur",
             Shape::Redact(_) => "redact",
+            Shape::Cursor(_) => "cursor",
         }
     }
 
@@ -282,14 +308,15 @@ impl Shape {
                 let first = p.first().copied().unwrap_or_default();
                 p.iter().fold(Area::from_points(first, first), |a, q| a.union(Area::from_points(*q, *q)))
             }
-            Shape::Line(a, b) => Area::from_points(*a, *b),
-            Shape::Rect(r) | Shape::Ellipse(r) | Shape::Blur(r) | Shape::Redact(r) => *r,
+            Shape::Line(a, b) | Shape::Arrow(a, b) => Area::from_points(*a, *b),
+            Shape::Rect(r) | Shape::Ellipse(r) | Shape::Blur(r) | Shape::Redact(r) | Shape::Cursor(r) => *r,
         }
     }
 
     /// everything the shape can paint, stroke included.
     pub fn extent(&self, style: &Style) -> Area {
-        self.bounds().inflate(style.width / 2.0 + 2.0)
+        let head = if matches!(self, Shape::Arrow(..)) { (style.width * 3.0 + 10.0) * 0.6 } else { 0.0 };
+        self.bounds().inflate(style.width / 2.0 + head + 2.0)
     }
 
     pub fn translated(&self, dx: f32, dy: f32) -> Shape {
@@ -299,10 +326,12 @@ impl Shape {
             Shape::Pen(p) => Shape::Pen(p.iter().map(m).collect()),
             Shape::Highlight(p) => Shape::Highlight(p.iter().map(m).collect()),
             Shape::Line(p, q) => Shape::Line(m(p), m(q)),
+            Shape::Arrow(p, q) => Shape::Arrow(m(p), m(q)),
             Shape::Rect(r) => Shape::Rect(a(r)),
             Shape::Ellipse(r) => Shape::Ellipse(a(r)),
             Shape::Blur(r) => Shape::Blur(a(r)),
             Shape::Redact(r) => Shape::Redact(a(r)),
+            Shape::Cursor(r) => Shape::Cursor(a(r)),
         }
     }
 
@@ -310,11 +339,11 @@ impl Shape {
     /// none for freehand strokes (they move only).
     pub fn handles(&self) -> Vec<Pt> {
         match self {
-            Shape::Line(a, b) => vec![*a, *b],
+            Shape::Line(a, b) | Shape::Arrow(a, b) => vec![*a, *b],
             Shape::Rect(r) | Shape::Ellipse(r) | Shape::Blur(r) | Shape::Redact(r) => {
                 vec![Pt { x: r.l, y: r.t }, Pt { x: r.r, y: r.t }, Pt { x: r.r, y: r.b }, Pt { x: r.l, y: r.b }]
             }
-            Shape::Pen(_) | Shape::Highlight(_) => Vec::new(),
+            Shape::Pen(_) | Shape::Highlight(_) | Shape::Cursor(_) => Vec::new(),
         }
     }
 
@@ -324,6 +353,9 @@ impl Shape {
         match self {
             Shape::Line(a, b) => {
                 if i == 0 { Shape::Line(constrain_line(*b, p, square), *b) } else { Shape::Line(*a, constrain_line(*a, p, square)) }
+            }
+            Shape::Arrow(a, b) => {
+                if i == 0 { Shape::Arrow(constrain_line(*b, p, square), *b) } else { Shape::Arrow(*a, constrain_line(*a, p, square)) }
             }
             Shape::Rect(r) | Shape::Ellipse(r) | Shape::Blur(r) | Shape::Redact(r) => {
                 // the corner opposite the handle stays put
@@ -354,13 +386,15 @@ impl Shape {
         let area = constrain_area(a, b, square);
         Some(match tool {
             Tool::Line => Shape::Line(a, constrain_line(a, b, square)),
+            Tool::Arrow => Shape::Arrow(a, constrain_line(a, b, square)),
             Tool::Rect => Shape::Rect(area),
             Tool::Ellipse => Shape::Ellipse(area),
             Tool::Blur => Shape::Blur(area),
             Tool::Redact => Shape::Redact(area),
             Tool::Pen => Shape::Pen(vec![a, b]),
             Tool::Highlighter => Shape::Highlight(vec![a, b]),
-            Tool::Select => return None,
+            // a pointer has its own size: the editor places it
+            Tool::Select | Tool::Cursor => return None,
         })
     }
 
@@ -369,7 +403,8 @@ impl Shape {
         let b = self.bounds();
         match self {
             Shape::Pen(p) | Shape::Highlight(p) => p.len() < 2,
-            Shape::Line(..) => b.width() < 2.0 && b.height() < 2.0,
+            Shape::Line(..) | Shape::Arrow(..) => b.width() < 2.0 && b.height() < 2.0,
+            Shape::Cursor(_) => false,
             _ => b.width() < 2.0 || b.height() < 2.0,
         }
     }
@@ -385,6 +420,10 @@ impl Shape {
                 pts.windows(2).any(|w| segment_dist(p, w[0], w[1]) <= reach)
             }
             Shape::Line(a, b) => segment_dist(p, *a, *b) <= reach,
+            Shape::Arrow(a, b) => {
+                let (tip, l, r, _) = arrow_head(*a, *b, style.width);
+                segment_dist(p, *a, *b) <= reach || in_triangle(p, tip, l, r) || segment_dist(p, l, r) <= tol
+            }
             Shape::Rect(r) => {
                 let outer = r.inflate(reach);
                 let inner = r.inflate(-reach);
@@ -396,9 +435,15 @@ impl Shape {
                 let d = (((p.x - cx) / rx).powi(2) + ((p.y - cy) / ry).powi(2)).sqrt();
                 (d - 1.0).abs() * rx.min(ry) <= reach
             }
-            Shape::Blur(r) | Shape::Redact(r) => r.inflate(tol).contains(p),
+            Shape::Blur(r) | Shape::Redact(r) | Shape::Cursor(r) => r.inflate(tol).contains(p),
         }
     }
+}
+
+fn in_triangle(p: Pt, a: Pt, b: Pt, c: Pt) -> bool {
+    let side = |u: Pt, v: Pt| (v.x - u.x) * (p.y - u.y) - (v.y - u.y) * (p.x - u.x);
+    let (d1, d2, d3) = (side(a, b), side(b, c), side(c, a));
+    !((d1 < 0.0 || d2 < 0.0 || d3 < 0.0) && (d1 > 0.0 || d2 > 0.0 || d3 > 0.0))
 }
 
 pub fn dist(a: Pt, b: Pt) -> f32 {
@@ -810,5 +855,12 @@ mod tests {
         let line = Shape::Line(pt(0.0, 0.0), pt(10.0, 0.0));
         assert_eq!(line.with_handle(1, pt(20.0, 5.0), false), Shape::Line(pt(0.0, 0.0), pt(20.0, 5.0)));
         assert!(Shape::Pen(vec![pt(0.0, 0.0), pt(1.0, 1.0)]).handles().is_empty());
+        let arrow = Shape::drawn(Tool::Arrow, pt(0.0, 0.0), pt(100.0, 0.0), false).unwrap();
+        assert_eq!(arrow.with_handle(1, pt(50.0, 50.0), false), Shape::Arrow(pt(0.0, 0.0), pt(50.0, 50.0)));
+        let s = Styles::default().stroke;
+        assert!(arrow.hit(pt(88.0, 5.0), &s, 1.0), "the head is hit");
+        assert!(!arrow.hit(pt(50.0, 6.0), &s, 1.0), "the shaft is thin");
+        assert!(arrow.extent(&s).r > 100.0 && arrow.extent(&s).t < -8.0, "the extent covers the head");
+        assert!(Shape::Cursor(Area { l: 0.0, t: 0.0, r: 32.0, b: 32.0 }).handles().is_empty());
     }
 }

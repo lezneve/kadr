@@ -328,6 +328,13 @@ impl App {
 
     fn capture_inner(&self, action: Action, settings: &Settings, started: Instant) -> Result<(), String> {
         let ms = |t: Instant| t.elapsed().as_secs_f64() * 1000.0;
+        // before the overlay takes the foreground: the program for %P
+        let app = capture::foreground_app();
+        crate::storage::set_app(app.as_deref());
+        trace!("capture from {}", app.as_deref().unwrap_or("(unknown)"));
+        // the pointer as it is now, before the overlay's cross replaces it;
+        // only the editor uses it (the pointer tool)
+        let pointer = if settings.edit { capture::grab_cursor() } else { None };
         let frame = match action {
             Action::Region => {
                 let screen = capture::virtual_screen();
@@ -343,7 +350,7 @@ impl App {
                     |rect| {
                         if settings.edit {
                             let at = capture::Rect { x: screen.x + rect.x, y: screen.y + rect.y, ..rect };
-                            edited = Some(full.crop(rect).map_err(|e| e.message()).and_then(|part| self.edit(&part, at, true, started)));
+                            edited = Some(full.crop(rect).map_err(|e| e.message()).and_then(|part| self.edit(&part, at, pointer.as_ref(), true, started)));
                         }
                     },
                 )
@@ -371,7 +378,7 @@ impl App {
                 let f = capture::grab(rect).map_err(|e| format!("could not read the screen: {}", e.message()))?;
                 trace!("window {}x{} at {},{}: {:.1} ms", rect.width, rect.height, rect.x, rect.y, ms(started));
                 if settings.edit {
-                    return self.edit(&f, rect, false, started);
+                    return self.edit(&f, rect, pointer.as_ref(), false, started);
                 }
                 f
             }
@@ -380,7 +387,7 @@ impl App {
                 let f = capture::grab(rect).map_err(|e| format!("could not read the screen: {}", e.message()))?;
                 trace!("screen {}x{} at {},{}: {:.1} ms", rect.width, rect.height, rect.x, rect.y, ms(started));
                 if settings.edit {
-                    return self.edit(&f, rect, false, started);
+                    return self.edit(&f, rect, pointer.as_ref(), false, started);
                 }
                 f
             }
@@ -391,9 +398,9 @@ impl App {
     /// opens the editor on `frame`, captured at `at`. nothing is copied or
     /// saved here. `wait`: keep the caller's overlay up until the editor's
     /// first frame is on screen (at most 1.5 s).
-    fn edit(&self, frame: &Frame, at: capture::Rect, wait: bool, started: Instant) -> Result<(), String> {
+    fn edit(&self, frame: &Frame, at: capture::Rect, pointer: Option<&capture::CursorShot>, wait: bool, started: Instant) -> Result<(), String> {
         let t = Instant::now();
-        let launched = crate::editor::launch(frame, at, self.settings_path.as_deref(), self.private_clipboard)?;
+        let launched = crate::editor::launch(frame, at, pointer, self.settings_path.as_deref(), self.private_clipboard)?;
         if wait {
             let shown = launched.wait_shown(1500);
             trace!(

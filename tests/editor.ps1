@@ -69,7 +69,7 @@ Write-Host "clipboard backed up ($($backup.formats) format(s)); contents are not
 try {
 
 Write-Host "`n1. printscreen -> overlay -> select -> editor; nothing copied or saved on its own"
-$p = Start-Kadr (Settings "save_folder = $caps`r`nclose_after_copy = no`r`n") -Extra '--test-private-clipboard'
+$p = Start-Kadr (Settings "save_folder = $caps`r`nclose_after_copy = no`r`nclose_after_save = no`r`n") -Extra '--test-private-clipboard'
 [void](Wait-Trace 'ready')
 $h = Window-Of $p 'kadr.main'
 $idle = Memory $p
@@ -212,7 +212,7 @@ Quit $p
 Get-ChildItem $caps -File | Remove-Item -Force
 
 Write-Host "`n8. $Cycles editor opens and closes"
-$p = Start-Kadr (Settings "save_folder = $caps`r`nclose_after_copy = no`r`n") -Extra '--test-private-clipboard'
+$p = Start-Kadr (Settings "save_folder = $caps`r`nclose_after_copy = no`r`nclose_after_save = no`r`n") -Extra '--test-private-clipboard'
 [void](Wait-Trace 'ready'); $h = Window-Of $p 'kadr.main'
 $m0 = Memory $p
 $sw = [Diagnostics.Stopwatch]::StartNew(); $ok = 0; $peakEd = 0.0; $peakWs = 0.0
