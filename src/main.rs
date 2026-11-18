@@ -81,6 +81,7 @@ struct Args {
     editor: Option<usize>,
     ready: Option<usize>,
     at: Option<capture::Rect>,
+    screen: Option<capture::Rect>,
     cursor: Option<[i32; 6]>,
     bench: Option<u32>,
     all: bool,
@@ -88,7 +89,7 @@ struct Args {
 }
 
 fn parse_args() -> Result<Args, String> {
-    let mut a = Args { trace: false, settings: None, settings_window: None, app_window: None, install: false, uninstall: false, finish_uninstall: None, wait_pid: None, private_clipboard: false, editor: None, ready: None, at: None, cursor: None, bench: None, all: false, out: None };
+    let mut a = Args { trace: false, settings: None, settings_window: None, app_window: None, install: false, uninstall: false, finish_uninstall: None, wait_pid: None, private_clipboard: false, editor: None, ready: None, at: None, screen: None, cursor: None, bench: None, all: false, out: None };
     let mut it = std::env::args().skip(1);
     while let Some(arg) = it.next() {
         match arg.as_str() {
@@ -103,6 +104,7 @@ fn parse_args() -> Result<Args, String> {
             "--editor" => a.editor = Some(it.next().and_then(|v| v.parse().ok()).ok_or("--editor needs a handle")?),
             "--ready" => a.ready = Some(it.next().and_then(|v| v.parse().ok()).ok_or("--ready needs a handle")?),
             "--at" => a.at = Some(it.next().as_deref().and_then(editor::parse_at).ok_or("--at needs x,y,width,height")?),
+            "--screen" => a.screen = Some(it.next().as_deref().and_then(editor::parse_at).ok_or("--screen needs x,y,width,height")?),
             "--cursor" => a.cursor = it.next().as_deref().and_then(editor::parse_cursor),
             "--process" => crate::storage::set_app(it.next().as_deref()),
             "--settings" => a.settings = Some(it.next().ok_or("--settings needs a file")?.into()),
@@ -164,7 +166,7 @@ fn main() {
     } else if args.install || (setup_name && !install::running_installed()) {
         installer::run()
     } else if let (Some(section), Some(ready), Some(at)) = (args.editor, args.ready, args.at) {
-        editor::run(editor::Args { section, ready, at, cursor: args.cursor }, args.settings, args.private_clipboard)
+        editor::run(editor::Args { section, ready, at, screen: args.screen.unwrap_or(at), cursor: args.cursor }, args.settings, args.private_clipboard)
     } else if let Some(path) = args.settings_window {
         let app = args.app_window.map(|h| windows::Win32::Foundation::HWND(h as *mut _));
         settings_window::run(path, app)

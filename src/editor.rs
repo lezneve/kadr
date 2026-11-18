@@ -38,11 +38,14 @@ pub struct Launched {
     ready: HANDLE,
 }
 
-/// starts an editor for `frame`, which was captured at `at` on the screen.
+/// starts an editor for `frame`, the whole captured screen area `screen`
+/// (frozen: the editor never grabs again), with the capture itself `at` (in
+/// screen coordinates, inside `screen`). the editor shows `at` and lets the
+/// user move and resize it over the same frozen pixels.
 /// `cursor`: the pointer when the capture started; its pixels follow the
 /// frame's in the section and `--cursor` says where its hotspot is in the
-/// image (it may be outside).
-pub fn launch(frame: &Frame, at: Rect, cursor: Option<&CursorShot>, settings: Option<&std::path::Path>, private_clipboard: bool) -> std::result::Result<Launched, String> {
+/// frame (it may be outside).
+pub fn launch(frame: &Frame, screen: Rect, at: Rect, cursor: Option<&CursorShot>, settings: Option<&std::path::Path>, private_clipboard: bool) -> std::result::Result<Launched, String> {
     let t = Instant::now();
     let frame_size = frame.byte_len();
     let size = frame_size + cursor.map_or(0, |c| c.image.pixels.len());
@@ -85,11 +88,13 @@ pub fn launch(frame: &Frame, at: Rect, cursor: Option<&CursorShot>, settings: Op
             .arg((ready.0 as usize).to_string())
             .arg("--at")
             .arg(format!("{},{},{},{}", at.x, at.y, at.width, at.height))
+            .arg("--screen")
+            .arg(format!("{},{},{},{}", screen.x, screen.y, screen.width, screen.height))
             .arg("--process")
             .arg(crate::storage::app());
         if let Some(c) = cursor {
             let i = &c.image;
-            cmd.arg("--cursor").arg(format!("{},{},{},{},{},{}", c.x - at.x, c.y - at.y, i.width, i.height, i.hot_x, i.hot_y));
+            cmd.arg("--cursor").arg(format!("{},{},{},{},{},{}", c.x - screen.x, c.y - screen.y, i.width, i.height, i.hot_x, i.hot_y));
         }
         if let Some(p) = settings {
             cmd.arg("--settings").arg(p);
@@ -192,7 +197,9 @@ pub struct Args {
     pub section: usize,
     pub ready: usize,
     pub at: Rect,
-    /// the pointer at capture time: hotspot x, y in the image, width,
+    /// the area the frame in the section covers; `at` is inside it.
+    pub screen: Rect,
+    /// the pointer at capture time: hotspot x, y in the frame, width,
     /// height, hotspot inside the pointer. its pixels follow the frame's.
     pub cursor: Option<[i32; 6]>,
 }

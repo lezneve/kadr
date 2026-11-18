@@ -85,7 +85,7 @@ impl Tool {
             Tool::Arrow => "arrow · a",
             Tool::Rect => "rectangle · r",
             Tool::Ellipse => "ellipse · e",
-            Tool::Highlighter => "highlighter · h",
+            Tool::Highlighter => "highlighter · h · again: rectangle",
             Tool::Blur => "blur · b · not secure, use redact",
             Tool::Redact => "redact · x",
             Tool::Cursor => "mouse pointer · m · click to place it",
@@ -167,6 +167,8 @@ pub struct Styles {
     pub stroke: Style,
     pub highlight: Style,
     pub redact: Style,
+    /// the highlighter draws translucent rectangles instead of a stroke.
+    pub highlight_rect: bool,
 }
 
 impl Default for Styles {
@@ -175,6 +177,7 @@ impl Default for Styles {
             stroke: Style { color: [1.0, 0.23, 0.19, 1.0], width: 4.0 },
             highlight: Style { color: [1.0, 0.84, 0.04, HIGHLIGHT_ALPHA], width: 18.0 },
             redact: Style { color: [0.0, 0.0, 0.0, 1.0], width: 0.0 },
+            highlight_rect: false,
         }
     }
 }
@@ -218,6 +221,10 @@ impl Styles {
         let mut out = Styles::default();
         for line in text.lines() {
             let Some((key, value)) = line.split_once('=') else { continue };
+            if key.trim() == "highlighter_mode" {
+                out.highlight_rect = value.trim() == "rectangle";
+                continue;
+            }
             let slot = match key.trim() {
                 "stroke" => Slot::Stroke,
                 "highlighter" => Slot::Highlight,
@@ -242,7 +249,7 @@ impl Styles {
                 format!("{} = #{:06x}", slot.name(), hex_of(s.color))
             }
         };
-        let lines = ["# kadr editor: the last colours and widths. written by the editor.".to_string(), line(Slot::Stroke), line(Slot::Highlight), line(Slot::Redact)];
+        let lines = ["# kadr editor: the last colours and widths. written by the editor.".to_string(), line(Slot::Stroke), line(Slot::Highlight), line(Slot::Redact), format!("highlighter_mode = {}", if self.highlight_rect { "rectangle" } else { "stroke" })];
         lines.join("\r\n") + "\r\n"
     }
 }
@@ -251,6 +258,8 @@ impl Styles {
 pub enum Shape {
     Pen(Vec<Pt>),
     Highlight(Vec<Pt>),
+    /// the highlighter's other mode: a translucent filled rectangle.
+    HighlightRect(Area),
     Line(Pt, Pt),
     /// a line with a filled head at the second point.
     Arrow(Pt, Pt),
@@ -281,7 +290,7 @@ impl Shape {
     pub fn slot(&self) -> Option<Slot> {
         match self {
             Shape::Pen(_) | Shape::Line(..) | Shape::Arrow(..) | Shape::Rect(_) | Shape::Ellipse(_) => Some(Slot::Stroke),
-            Shape::Highlight(_) => Some(Slot::Highlight),
+            Shape::Highlight(_) | Shape::HighlightRect(_) => Some(Slot::Highlight),
             Shape::Redact(_) => Some(Slot::Redact),
             Shape::Blur(_) | Shape::Cursor(_) => None,
         }
@@ -291,6 +300,7 @@ impl Shape {
         match self {
             Shape::Pen(_) => "pen",
             Shape::Highlight(_) => "highlighter",
+            Shape::HighlightRect(_) => "highlighter-rect",
             Shape::Line(..) => "line",
             Shape::Arrow(..) => "arrow",
             Shape::Rect(_) => "rect",
@@ -309,7 +319,7 @@ impl Shape {
                 p.iter().fold(Area::from_points(first, first), |a, q| a.union(Area::from_points(*q, *q)))
             }
             Shape::Line(a, b) | Shape::Arrow(a, b) => Area::from_points(*a, *b),
-            Shape::Rect(r) | Shape::Ellipse(r) | Shape::Blur(r) | Shape::Redact(r) | Shape::Cursor(r) => *r,
+            Shape::Rect(r) | Shape::Ellipse(r) | Shape::Blur(r) | Shape::Redact(r) | Shape::Cursor(r) | Shape::HighlightRect(r) => *r,
         }
     }
 
@@ -328,6 +338,7 @@ impl Shape {
             Shape::Line(p, q) => Shape::Line(m(p), m(q)),
             Shape::Arrow(p, q) => Shape::Arrow(m(p), m(q)),
             Shape::Rect(r) => Shape::Rect(a(r)),
+            Shape::HighlightRect(r) => Shape::HighlightRect(a(r)),
             Shape::Ellipse(r) => Shape::Ellipse(a(r)),
             Shape::Blur(r) => Shape::Blur(a(r)),
             Shape::Redact(r) => Shape::Redact(a(r)),
@@ -340,7 +351,7 @@ impl Shape {
     pub fn handles(&self) -> Vec<Pt> {
         match self {
             Shape::Line(a, b) | Shape::Arrow(a, b) => vec![*a, *b],
-            Shape::Rect(r) | Shape::Ellipse(r) | Shape::Blur(r) | Shape::Redact(r) => {
+            Shape::Rect(r) | Shape::Ellipse(r) | Shape::Blur(r) | Shape::Redact(r) | Shape::HighlightRect(r) => {
                 vec![Pt { x: r.l, y: r.t }, Pt { x: r.r, y: r.t }, Pt { x: r.r, y: r.b }, Pt { x: r.l, y: r.b }]
             }
             Shape::Pen(_) | Shape::Highlight(_) | Shape::Cursor(_) => Vec::new(),
@@ -357,7 +368,7 @@ impl Shape {
             Shape::Arrow(a, b) => {
                 if i == 0 { Shape::Arrow(constrain_line(*b, p, square), *b) } else { Shape::Arrow(*a, constrain_line(*a, p, square)) }
             }
-            Shape::Rect(r) | Shape::Ellipse(r) | Shape::Blur(r) | Shape::Redact(r) => {
+            Shape::Rect(r) | Shape::Ellipse(r) | Shape::Blur(r) | Shape::Redact(r) | Shape::HighlightRect(r) => {
                 // the corner opposite the handle stays put
                 let fixed = match i {
                     0 => Pt { x: r.r, y: r.b },
@@ -374,6 +385,7 @@ impl Shape {
     fn with_area(&self, a: Area) -> Shape {
         match self {
             Shape::Rect(_) => Shape::Rect(a),
+            Shape::HighlightRect(_) => Shape::HighlightRect(a),
             Shape::Ellipse(_) => Shape::Ellipse(a),
             Shape::Blur(_) => Shape::Blur(a),
             Shape::Redact(_) => Shape::Redact(a),
@@ -435,7 +447,7 @@ impl Shape {
                 let d = (((p.x - cx) / rx).powi(2) + ((p.y - cy) / ry).powi(2)).sqrt();
                 (d - 1.0).abs() * rx.min(ry) <= reach
             }
-            Shape::Blur(r) | Shape::Redact(r) | Shape::Cursor(r) => r.inflate(tol).contains(p),
+            Shape::Blur(r) | Shape::Redact(r) | Shape::Cursor(r) | Shape::HighlightRect(r) => r.inflate(tol).contains(p),
         }
     }
 }
@@ -520,12 +532,18 @@ enum Edit {
     Remove(usize, Item),
     Change { id: u64, before: Shape, after: Shape },
     Restyle { id: u64, before: Style, after: Style },
+    /// the frame (the exported part of the capture) moved or was resized.
+    Crop { before: [i32; 4], after: [i32; 4] },
 }
 
 /// the annotations and their history.
 #[derive(Default)]
 pub struct Doc {
     pub items: Vec<Item>,
+    /// the frame: x, y, width, height of the exported part, in the frame of
+    /// the whole capture (shapes use the same coordinates). part of the
+    /// history, so a moved frame counts as a change and undo brings it back.
+    pub crop: [i32; 4],
     /// (state id after the edit, edit). the state id names a document
     /// state, so "saved" survives undo back to it.
     undo: Vec<(u64, Edit)>,
@@ -540,6 +558,11 @@ pub struct Doc {
 }
 
 impl Doc {
+    /// an untouched document whose frame is `crop`.
+    pub fn with_crop(crop: [i32; 4]) -> Doc {
+        Doc { crop, ..Default::default() }
+    }
+
     /// the id of the current state; 0 = the untouched capture.
     pub fn state(&self) -> u64 {
         self.undo.last().map_or(self.floor, |(s, _)| *s)
@@ -627,6 +650,15 @@ impl Doc {
         Some(area)
     }
 
+    /// records a finished move or resize of the frame; `before` is where it
+    /// was when the gesture began.
+    pub fn change_crop(&mut self, before: [i32; 4], after: [i32; 4]) {
+        self.crop = after;
+        if before != after {
+            self.record(Edit::Crop { before, after });
+        }
+    }
+
     /// shows a style while it is being chosen, without recording anything.
     pub fn preview_style(&mut self, id: u64, style: Style) -> Option<Area> {
         let item = self.items.iter_mut().find(|i| i.id == id)?;
@@ -660,6 +692,10 @@ impl Doc {
                     i.shape = to.clone();
                 }
                 area
+            }
+            (Edit::Crop { before, after }, fwd) => {
+                self.crop = if fwd { *after } else { *before };
+                Area::default()
             }
             (Edit::Restyle { id, before, after }, fwd) => {
                 let to = if fwd { *after } else { *before };
@@ -703,7 +739,7 @@ impl Doc {
         let edit = |e: &Edit| match e {
             Edit::Add(_, i) | Edit::Remove(_, i) => shape(&i.shape),
             Edit::Change { before, after, .. } => shape(before) + shape(after),
-            Edit::Restyle { .. } => 48,
+            Edit::Restyle { .. } | Edit::Crop { .. } => 48,
         };
         self.items.iter().map(|i| shape(&i.shape)).sum::<usize>() + self.undo.iter().chain(&self.redo).map(|(_, e)| edit(e)).sum::<usize>()
     }
@@ -746,6 +782,34 @@ mod tests {
         assert!(!d.can_redo());
         assert_ne!(d.state(), saved);
         assert_ne!(d.state(), after_add);
+    }
+
+    #[test]
+    fn highlighter_mode_is_remembered() {
+        let mut st = Styles::default();
+        assert!(!st.highlight_rect);
+        st.highlight_rect = true;
+        assert!(Styles::parse(&st.to_text()).highlight_rect);
+        assert!(!Styles::parse("highlighter = #ffd60a 18").highlight_rect, "an old editor.ini keeps the stroke");
+        let r = Shape::HighlightRect(Area { l: 0.0, t: 0.0, r: 10.0, b: 10.0 });
+        assert_eq!(r.slot(), Some(Slot::Highlight));
+        assert_eq!(r.handles().len(), 4);
+        assert!(r.hit(pt(5.0, 5.0), &Styles::default().highlight, 0.0), "filled: a click inside selects it");
+    }
+
+    #[test]
+    fn frame_moves_are_history() {
+        let mut d = Doc::with_crop([10, 20, 100, 50]);
+        d.change_crop([10, 20, 100, 50], [10, 20, 100, 50]);
+        assert_eq!(d.state(), 0, "an unchanged frame is not an edit");
+        d.change_crop([10, 20, 100, 50], [30, 20, 80, 70]);
+        assert_ne!(d.state(), 0, "a moved frame is a change (ctrl+s must save it)");
+        assert_eq!(d.crop, [30, 20, 80, 70]);
+        d.undo();
+        assert_eq!(d.crop, [10, 20, 100, 50]);
+        assert_eq!(d.state(), 0);
+        d.redo();
+        assert_eq!(d.crop, [30, 20, 80, 70]);
     }
 
     #[test]

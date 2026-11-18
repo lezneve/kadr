@@ -217,13 +217,38 @@ enum Drag {
     Draw { start: Pt },
     Move { id: u64, start: Pt, before: Shape },
     Resize { id: u64, handle: usize, before: Shape },
+    /// the frame: `mode` = FRAME_* bits of the edges taken (FRAME_MOVE: the
+    /// whole frame), the cursor's screen position at the start, and the
+    /// frame (x, y, w, h in capture coordinates) before.
+    Frame { mode: u8, start: (i32, i32), before: [i32; 4] },
 }
+
+const FRAME_L: u8 = 1;
+const FRAME_T: u8 = 2;
+const FRAME_R: u8 = 4;
+const FRAME_B: u8 = 8;
+const FRAME_MOVE: u8 = 16;
+/// the smallest the frame can be made, in pixels.
+const MIN_CROP: i32 = 8;
+/// how near (pixels, scaled) to the frame's edge a press grabs the edge.
+const EDGE_TOL: f32 = 7.0;
 
 struct Editor {
     hwnd: Cell<HWND>,
     bar: Cell<HWND>,
-    at: Rect,
-    /// the captured pixels, never modified.
+    /// the area of the screen the capture covers; `source` is that whole area,
+    /// frozen. shapes are in the coordinates of `source`.
+    screen: Rect,
+    /// the frame, on the screen: the part of the capture shown and exported.
+    /// the user can move and resize it (select tool); it never leaves `screen`.
+    at: Cell<Rect>,
+    /// set while the editor itself resizes its window (the system's own
+    /// resizing and snapping are refused).
+    resizing: Cell<bool>,
+    /// a press on empty space (it moves the frame) went past the drag
+    /// distance; until then it is still a click.
+    frame_armed: Cell<bool>,
+    /// the captured pixels of the whole `screen`, never modified.
     source: Frame,
     gfx: RefCell<Option<Gfx>>,
     doc: RefCell<Doc>,
@@ -279,7 +304,8 @@ struct Editor {
 
 pub fn run(args: Args, settings_path: Option<PathBuf>, private_clipboard: bool) -> i32 {
     let at = args.at;
-    let size = at.width as usize * at.height as usize * 4;
+    let screen = args.screen;
+    let size = screen.width as usize * screen.height as usize * 4;
     let pointer_size = args.cursor.map_or(0, |c| (c[2] * c[3] * 4) as usize);
     let section = HANDLE(args.section as *mut _);
     let ready = HANDLE(args.ready as *mut _);
@@ -296,7 +322,7 @@ pub fn run(args: Args, settings_path: Option<PathBuf>, private_clipboard: bool) 
         return 1;
     }
     // one private copy, then the shared section is released at once.
-    let source = Frame::new(at.width, at.height).map(|mut f| {
+    let source = Frame::new(screen.width, screen.height).map(|mut f| {
         // SAFETY: the view holds exactly `size` bytes, as kadr wrote them.
         f.pixels_mut().copy_from_slice(unsafe { std::slice::from_raw_parts(view.Value.cast::<u8>(), size) });
         f
@@ -337,10 +363,13 @@ pub fn run(args: Args, settings_path: Option<PathBuf>, private_clipboard: bool) 
         let editor = Box::new(Editor {
             hwnd: Cell::new(HWND::default()),
             bar: Cell::new(HWND::default()),
-            at,
+            screen,
+            at: Cell::new(at),
+            resizing: Cell::new(false),
+            frame_armed: Cell::new(false),
             source: source?,
             gfx: RefCell::new(None),
-            doc: RefCell::new(Doc::default()),
+            doc: RefCell::new(Doc::with_crop([at.x - screen.x, at.y - screen.y, at.width, at.height])),
             tool: Cell::new(Tool::Rect),
             drawing: RefCell::new(None),
             drag: RefCell::new(Drag::None),
@@ -423,7 +452,7 @@ unsafe fn show_and_loop(ed: &Editor, ready: HANDLE) -> Result<i32> {
         ] {
             RegisterClassW(&WNDCLASSW { lpfnWndProc: Some(proc_), hInstance: instance.into(), lpszClassName: class, hCursor: cursor.unwrap_or_default(), ..Default::default() });
         }
-        let at = ed.at;
+        let at = ed.at.get();
         let title = wide(&format!("kadr · {} × {}", at.width, at.height));
         // a popup with a thick frame and no non-client area: windows 11 gives
         // it the system border and shadow, while the client is exactly the
@@ -431,9 +460,11 @@ unsafe fn show_and_loop(ed: &Editor, ready: HANDLE) -> Result<i32> {
         // the veil: a solid black layered window over the whole virtual screen,
         // no pixels of ours (dwm composes the colour); owner of the image
         // window, so the image, its toolbar and panels always sit above it.
-        let vs = crate::capture::virtual_screen();
+        // it paints the frozen capture, darkened (not the live desktop, so
+        // what shows when the frame is dragged outwards is what was captured).
+        let vs = ed.screen;
         let dim = CreateWindowExW(
-            windows::Win32::UI::WindowsAndMessaging::WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
+            WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
             DIM_CLASS,
             w!("kadr"),
             WS_POPUP,
@@ -444,9 +475,8 @@ unsafe fn show_and_loop(ed: &Editor, ready: HANDLE) -> Result<i32> {
             None,
             None,
             Some(instance.into()),
-            None,
+            Some(ed as *const Editor as *const _),
         )?;
-        let _ = windows::Win32::UI::WindowsAndMessaging::SetLayeredWindowAttributes(dim, windows::Win32::Foundation::COLORREF(0), DIM_ALPHA, windows::Win32::UI::WindowsAndMessaging::LWA_ALPHA);
         let _ = DwmSetWindowAttribute(dim, DWMWA_TRANSITIONS_FORCEDISABLED, (&1i32 as *const i32).cast(), 4);
         ed.dim.set(dim);
         let hwnd = CreateWindowExW(
@@ -520,6 +550,7 @@ unsafe fn show_and_loop(ed: &Editor, ready: HANDLE) -> Result<i32> {
         let _ = DwmSetWindowAttribute(bar, DWMWA_TRANSITIONS_FORCEDISABLED, (&on as *const i32).cast(), 4);
 
         let _ = ShowWindow(dim, SW_SHOWNOACTIVATE);
+        let _ = UpdateWindow(dim); // painted before the overlay goes
         let _ = ShowWindow(hwnd, SW_SHOW);
         let _ = UpdateWindow(hwnd);
         let _ = ShowWindow(frame, SW_SHOWNOACTIVATE);
@@ -601,8 +632,28 @@ impl Editor {
         v * self.dpi.get() as f32 / 96.0
     }
 
+    /// where the frame is in the capture's own coordinates (x, y, w, h).
+    fn crop(&self) -> [i32; 4] {
+        let a = self.at.get();
+        [a.x - self.screen.x, a.y - self.screen.y, a.width, a.height]
+    }
+
+    /// the top-left of the frame in the capture: what to add to a point of
+    /// the image window to get a point of the capture.
+    fn origin(&self) -> (i32, i32) {
+        let c = self.crop();
+        (c[0], c[1])
+    }
+
+    /// the frame as an area, in capture coordinates (where shapes live).
     fn image_area(&self) -> Area {
-        Area { l: 0.0, t: 0.0, r: self.at.width as f32, b: self.at.height as f32 }
+        let c = self.crop();
+        Area { l: c[0] as f32, t: c[1] as f32, r: (c[0] + c[2]) as f32, b: (c[1] + c[3]) as f32 }
+    }
+
+    /// the whole captured screen as an area, in capture coordinates.
+    fn frame_area(&self) -> Area {
+        Area { l: 0.0, t: 0.0, r: self.screen.width as f32, b: self.screen.height as f32 }
     }
 
     fn pid() -> u32 {
@@ -665,8 +716,11 @@ impl Editor {
     }
 
     fn invalidate(&self, a: Area) {
-        // selection marks and handles reach 14 px outside a shape
+        // selection marks and handles reach 14 px outside a shape; `a` is in
+        // capture coordinates, the window's are the frame's
+        let (ox, oy) = self.origin();
         let r = rect_of(a.inflate(16.0));
+        let r = RECT { left: r.left - ox, top: r.top - oy, right: r.right - ox, bottom: r.bottom - oy };
         // SAFETY: our own window.
         unsafe {
             let _ = InvalidateRect(Some(self.hwnd.get()), Some(&r), false);
@@ -688,11 +742,15 @@ impl Editor {
         // selection: microseconds, no pixels are copied)
         let source_dc = MemoryDc::compatible_with(hdc)?;
         let _source_sel = source_dc.select(self.source.bitmap());
+        // `area` is in the window's coordinates, shapes and the source in the
+        // capture's: the frame's origin is the difference
+        let (ox, oy) = self.origin();
+        let at = self.at.get();
         let area = RECT {
             left: area.left.max(0),
             top: area.top.max(0),
-            right: area.right.min(self.at.width),
-            bottom: area.bottom.min(self.at.height),
+            right: area.right.min(at.width),
+            bottom: area.bottom.min(at.height),
         };
         let doc = self.doc.borrow();
         let drawing = self.drawing.borrow();
@@ -704,7 +762,7 @@ impl Editor {
             while x < area.right {
                 let w = (area.right - x).min(TILE);
                 let tile = RECT { left: x, top: y, right: x + w, bottom: y + h };
-                let clip = Area { l: x as f32, t: y as f32, r: (x + w) as f32, b: (y + h) as f32 };
+                let clip = Area { l: (x + ox) as f32, t: (y + oy) as f32, r: (x + w + ox) as f32, b: (y + h + oy) as f32 };
                 let selected = if marks { self.selected.get().and_then(|id| doc.find(id)) } else { None };
                 let touched = doc.items.iter().any(|i| i.shape.extent(&i.style).intersects(clip))
                     || drawing.as_ref().is_some_and(|(s, st)| s.extent(st).intersects(clip))
@@ -712,7 +770,7 @@ impl Editor {
                 if !touched {
                     // SAFETY: both dcs are valid for this call.
                     unsafe {
-                        let _ = windows::Win32::Graphics::Gdi::BitBlt(hdc, x, y, w, h, Some(source_dc.0), x, y, windows::Win32::Graphics::Gdi::SRCCOPY);
+                        let _ = windows::Win32::Graphics::Gdi::BitBlt(hdc, x, y, w, h, Some(source_dc.0), x + ox, y + oy, windows::Win32::Graphics::Gdi::SRCCOPY);
                     }
                     x += w;
                     continue;
@@ -728,9 +786,9 @@ impl Editor {
                 unsafe {
                     g.target.BindDC(hdc, &tile)?;
                     g.target.BeginDraw();
-                    g.target.SetTransform(&Matrix3x2::translation(-(x as f32), -(y as f32)));
+                    g.target.SetTransform(&Matrix3x2::translation(-((x + ox) as f32), -((y + oy) as f32)));
                     let stride = self.source.stride();
-                    let src = self.source.pixels().as_ptr().add(y as usize * stride + x as usize * 4);
+                    let src = self.source.pixels().as_ptr().add((y + oy) as usize * stride + (x + ox) as usize * 4);
                     let _ = g.tile.CopyFromMemory(Some(&D2D_RECT_U { left: 0, top: 0, right: w as u32, bottom: h as u32 }), src.cast(), stride as u32);
                     g.target.DrawBitmap(
                         &g.tile,
@@ -782,7 +840,7 @@ impl Editor {
                     let e = D2D1_ELLIPSE { point: Vector2 { X: (r.l + r.r) / 2.0, Y: (r.t + r.b) / 2.0 }, radiusX: r.width() / 2.0, radiusY: r.height() / 2.0 };
                     g.target.DrawEllipse(&e, g.color(style.color), style.width, None);
                 }
-                Shape::Redact(r) => g.target.FillRectangle(&rf(*r), g.color(style.color)),
+                Shape::Redact(r) | Shape::HighlightRect(r) => g.target.FillRectangle(&rf(*r), g.color(style.color)),
                 Shape::Blur(r) => self.draw_blur(g, *r, clip),
             }
         }
@@ -853,7 +911,7 @@ impl Editor {
         if part.width() <= 0.0 || part.height() <= 0.0 {
             return;
         }
-        let img = self.image_area();
+        let img = self.frame_area();
         let reach = part.inflate(3.0 * BLUR_SIGMA);
         let input = rect_of(Area { l: reach.l.max(img.l), t: reach.t.max(img.t), r: reach.r.min(img.r), b: reach.b.min(img.b) });
         let (w, h) = (input.right - input.left, input.bottom - input.top);
@@ -915,7 +973,11 @@ impl Editor {
     fn with_export<T>(&self, f: impl FnOnce(&Frame) -> std::result::Result<T, String>) -> std::result::Result<T, String> {
         match self.compose().map_err(|e| e.message())? {
             Some(out) => f(&out),
-            None => f(&self.source),
+            None => {
+                let c = self.crop();
+                let part = self.source.crop(crate::capture::Rect { x: c[0], y: c[1], width: c[2], height: c[3] }).map_err(|e| e.message())?;
+                f(&part)
+            }
         }
     }
 
@@ -924,18 +986,19 @@ impl Editor {
             return Ok(None);
         }
         let t = Instant::now();
-        let out = Frame::new(self.at.width, self.at.height)?;
+        let at = self.at.get();
+        let out = Frame::new(at.width, at.height)?;
         {
             let screen = ScreenDc::get()?;
             let mem = MemoryDc::compatible_with(screen.0)?;
             let _sel = mem.select(out.bitmap());
-            self.render(mem.0, RECT { left: 0, top: 0, right: self.at.width, bottom: self.at.height }, false)?;
+            self.render(mem.0, RECT { left: 0, top: 0, right: at.width, bottom: at.height }, false)?;
             // SAFETY: flushes gdi's batch before the bits are read.
             unsafe {
                 let _ = GdiFlush();
             }
         }
-        trace!("editor {}: composed {}x{} with {} shape(s) in {:.1} ms", Self::pid(), self.at.width, self.at.height, self.doc.borrow().items.len(), t.elapsed().as_secs_f64() * 1000.0);
+        trace!("editor {}: composed {}x{} with {} shape(s) in {:.1} ms", Self::pid(), at.width, at.height, self.doc.borrow().items.len(), t.elapsed().as_secs_f64() * 1000.0);
         Ok(Some(out))
     }
 
@@ -973,6 +1036,19 @@ impl Editor {
 
     fn set_tool(&self, tool: Tool) {
         if self.dragging() {
+            return;
+        }
+        // the highlighter button or h again: stroke <-> translucent rectangle
+        if tool == Tool::Highlighter && self.tool.get() == Tool::Highlighter {
+            let rect = {
+                let mut styles = self.styles.borrow_mut();
+                styles.highlight_rect = !styles.highlight_rect;
+                styles.highlight_rect
+            };
+            self.save_styles();
+            trace!("editor {}: highlighter mode {}", Self::pid(), if rect { "rectangle" } else { "stroke" });
+            self.redraw_bar();
+            self.refresh_flyout();
             return;
         }
         self.tool.set(tool);
@@ -1039,6 +1115,7 @@ impl Editor {
                 self.selected.set(None);
             }
             self.invalidate(a);
+            self.sync_crop();
             self.select(self.selected.get());
             self.redraw_bar();
         }
@@ -1090,6 +1167,14 @@ impl Editor {
                     let _ = ReleaseCapture();
                 }
             }
+            Drag::Frame { before, .. } => {
+                self.apply_crop(before);
+                self.relayout();
+                // SAFETY: plain call.
+                unsafe {
+                    let _ = ReleaseCapture();
+                }
+            }
             Drag::None => {
                 if self.selected.get().is_some() {
                     self.select(None);
@@ -1105,7 +1190,7 @@ impl Editor {
         let result = self.with_export(|f| clipboard::copy(self.hwnd.get(), f, self.private_clipboard).map_err(|e| e.message()));
         match result {
             Ok(()) => {
-                trace!("editor {}: copied {}x{} in {:.1} ms", Self::pid(), self.at.width, self.at.height, t.elapsed().as_secs_f64() * 1000.0);
+                trace!("editor {}: copied {}x{} in {:.1} ms", Self::pid(), self.at.get().width, self.at.get().height, t.elapsed().as_secs_f64() * 1000.0);
                 if self.settings().close_after_copy {
                     // the result is on the clipboard: no question about saving
                     trace!("editor {}: closing after copy", Self::pid());
@@ -1139,8 +1224,9 @@ impl Editor {
             (tw.ceil() as i32 + self.pxi(32), self.pxi(36))
         };
         let work = self.work_area();
-        let x = (self.at.x + (self.at.width - w) / 2).min(work.right - w).max(work.left);
-        let y = (self.at.y + (self.at.height - h) / 2).min(work.bottom - h).max(work.top);
+        let at = self.at.get();
+        let x = (at.x + (at.width - w) / 2).min(work.right - w).max(work.left);
+        let y = (at.y + (at.height - h) / 2).min(work.bottom - h).max(work.top);
         // SAFETY: our own windows; the note gets the editor pointer like the
         // toolbar and lives until the loop ends.
         unsafe {
@@ -1320,8 +1406,221 @@ impl Editor {
     fn point(&self, lparam: LPARAM) -> Pt {
         let x = (lparam.0 & 0xffff) as i16 as f32;
         let y = ((lparam.0 >> 16) & 0xffff) as i16 as f32;
-        // clamped to the image: nothing is drawn outside it
-        Pt { x: x.clamp(0.0, self.at.width as f32), y: y.clamp(0.0, self.at.height as f32) }
+        // clamped to the frame: nothing is drawn outside it. the result is in
+        // the capture's coordinates, like the shapes
+        let (ox, oy) = self.origin();
+        let at = self.at.get();
+        Pt { x: x.clamp(0.0, at.width as f32) + ox as f32, y: y.clamp(0.0, at.height as f32) + oy as f32 }
+    }
+
+    // ---- the frame ------------------------------------------------------------
+
+    /// the FRAME_* edges within reach of `p` (capture coordinates), inside the
+    /// frame or just outside it; 0 when `p` is not at an edge. where two
+    /// opposite edges are both in reach (a very small frame) the nearer wins.
+    fn edge_at(&self, p: Pt) -> u8 {
+        let a = self.image_area();
+        let tol = self.px(EDGE_TOL);
+        if p.x < a.l - tol || p.x > a.r + tol || p.y < a.t - tol || p.y > a.b + tol {
+            return 0;
+        }
+        let near = |v: f32, lo: f32, hi: f32, low: u8, high: u8| {
+            let (dl, dh) = ((v - lo).abs(), (v - hi).abs());
+            if dl <= tol && dl <= dh {
+                low
+            } else if dh <= tol {
+                high
+            } else {
+                0
+            }
+        };
+        near(p.x, a.l, a.r, FRAME_L, FRAME_R) | near(p.y, a.t, a.b, FRAME_T, FRAME_B)
+    }
+
+    fn edge_cursor(mode: u8) -> windows::core::PCWSTR {
+        use windows::Win32::UI::WindowsAndMessaging::{IDC_SIZEALL, IDC_SIZENESW, IDC_SIZENS, IDC_SIZENWSE, IDC_SIZEWE};
+        match mode {
+            FRAME_L | FRAME_R => IDC_SIZEWE,
+            FRAME_T | FRAME_B => IDC_SIZENS,
+            m if m == FRAME_L | FRAME_T || m == FRAME_R | FRAME_B => IDC_SIZENWSE,
+            m if m == FRAME_L | FRAME_B || m == FRAME_R | FRAME_T => IDC_SIZENESW,
+            _ => IDC_SIZEALL,
+        }
+    }
+
+    fn cursor_pos() -> (i32, i32) {
+        let mut pt = POINT::default();
+        // SAFETY: plain cursor query.
+        unsafe {
+            let _ = GetCursorPos(&mut pt);
+        }
+        (pt.x, pt.y)
+    }
+
+    /// starts dragging the frame by `mode`; `owner` takes the mouse.
+    fn start_frame_drag(&self, mode: u8, owner: HWND) {
+        self.frame_armed.set(mode & FRAME_MOVE == 0);
+        *self.drag.borrow_mut() = Drag::Frame { mode, start: Self::cursor_pos(), before: self.crop() };
+        // SAFETY: one of our own windows.
+        unsafe {
+            SetCapture(owner);
+        }
+    }
+
+    /// the frame while it is dragged: from where the drag began and where the
+    /// cursor is now on the screen (the window moves under the cursor, so the
+    /// window's own coordinates would feed back on themselves). it stays
+    /// inside the capture and never gets smaller than MIN_CROP.
+    fn drag_frame(&self, mode: u8, start: (i32, i32), before: [i32; 4]) {
+        let (cx, cy) = Self::cursor_pos();
+        let (dx, dy) = (cx - start.0, cy - start.1);
+        let [bx, by, bw, bh] = before;
+        let (sw, sh) = (self.screen.width, self.screen.height);
+        let clamp = |v: i32, lo: i32, hi: i32| v.max(lo).min(hi);
+        // a press on empty space only moves the frame once the cursor has
+        // gone a real drag distance: a click to deselect must not nudge it
+        if mode & FRAME_MOVE != 0 && !self.frame_armed.get() {
+            // SAFETY: plain metrics queries.
+            let (mx, my) = unsafe {
+                use windows::Win32::UI::WindowsAndMessaging::{GetSystemMetrics, SM_CXDRAG, SM_CYDRAG};
+                (GetSystemMetrics(SM_CXDRAG).max(2), GetSystemMetrics(SM_CYDRAG).max(2))
+            };
+            if dx.abs() <= mx && dy.abs() <= my {
+                return;
+            }
+            self.frame_armed.set(true);
+        }
+        let (mut l, mut t, mut r, mut b) = (bx, by, bx + bw, by + bh);
+        if mode & FRAME_MOVE != 0 {
+            l = clamp(bx + dx, 0, sw - bw);
+            t = clamp(by + dy, 0, sh - bh);
+            r = l + bw;
+            b = t + bh;
+        } else {
+            if mode & FRAME_L != 0 {
+                l = clamp(bx + dx, 0, r - MIN_CROP);
+            }
+            if mode & FRAME_R != 0 {
+                r = clamp(bx + bw + dx, l + MIN_CROP, sw);
+            }
+            if mode & FRAME_T != 0 {
+                t = clamp(by + dy, 0, b - MIN_CROP);
+            }
+            if mode & FRAME_B != 0 {
+                b = clamp(by + bh + dy, t + MIN_CROP, sh);
+            }
+        }
+        // whatever the clamps above gave, the frame stays inside the capture
+        // (a read outside the source would be a crash)
+        let l = l.max(0).min(sw - 1);
+        let t = t.max(0).min(sh - 1);
+        let r = r.max(l + 1).min(sw);
+        let b = b.max(t + 1).min(sh);
+        self.apply_crop([l, t, r - l, b - t]);
+        self.redraw_bar(); // the size in the toolbar follows live
+    }
+
+    /// puts the image window on the frame `c` (x, y, w, h in capture
+    /// coordinates). nothing is recorded: the callers do that.
+    fn apply_crop(&self, c: [i32; 4]) {
+        let at = Rect { x: self.screen.x + c[0], y: self.screen.y + c[1], width: c[2], height: c[3] };
+        if at == self.at.get() {
+            return;
+        }
+        self.at.set(at);
+        self.resizing.set(true);
+        // SAFETY: our own window. the content is anchored to the capture, not
+        // to the window's corner, so the old bits are never copied over.
+        unsafe {
+            use windows::Win32::UI::WindowsAndMessaging::{SWP_NOACTIVATE, SWP_NOCOPYBITS, SWP_NOZORDER, SetWindowPos};
+            let _ = SetWindowPos(self.hwnd.get(), None, at.x, at.y, at.width, at.height, SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOCOPYBITS);
+            let _ = InvalidateRect(Some(self.hwnd.get()), None, false);
+        }
+        self.resizing.set(false);
+        self.place_frame();
+    }
+
+    /// after the frame changed for good: the title, the toolbar and the panel
+    /// follow it.
+    fn relayout(&self) {
+        let at = self.at.get();
+        let title = wide(&format!("kadr · {} × {}", at.width, at.height));
+        let (bw, bh) = self.bar_size();
+        let (bx, by) = self.bar_place(bw, bh);
+        // SAFETY: our own windows.
+        unsafe {
+            let _ = windows::Win32::UI::WindowsAndMessaging::SetWindowTextW(self.hwnd.get(), PCWSTR(title.as_ptr()));
+            let _ = windows::Win32::UI::WindowsAndMessaging::SetWindowPos(
+                self.bar.get(),
+                None,
+                bx,
+                by,
+                bw,
+                bh,
+                windows::Win32::UI::WindowsAndMessaging::SWP_NOACTIVATE | windows::Win32::UI::WindowsAndMessaging::SWP_NOZORDER,
+            );
+        }
+        if self.flyout_visible() {
+            self.place_flyout();
+        }
+        self.redraw_bar();
+    }
+
+    /// undo and redo can bring the frame back: the window follows the
+    /// document.
+    fn sync_crop(&self) {
+        let want = self.doc.borrow().crop;
+        if want != self.crop() {
+            self.apply_crop(want);
+            self.relayout();
+        }
+    }
+
+    /// a press on the veil, outside the image: it takes the frame's edge if
+    /// one is in reach (select tool only).
+    fn veil_down(&self, veil: HWND) {
+        if self.dragging() || self.pick.get() || self.tool.get() != Tool::Select {
+            return;
+        }
+        let (cx, cy) = Self::cursor_pos();
+        let mode = self.edge_at(Pt { x: (cx - self.screen.x) as f32, y: (cy - self.screen.y) as f32 });
+        if mode != 0 {
+            self.hide_flyout();
+            self.start_frame_drag(mode, veil);
+        }
+    }
+
+    fn veil_cursor(&self) -> HCURSOR {
+        let mut id = IDC_ARROW;
+        if self.tool.get() == Tool::Select && !self.pick.get() {
+            let (cx, cy) = Self::cursor_pos();
+            let mut mode = self.edge_at(Pt { x: (cx - self.screen.x) as f32, y: (cy - self.screen.y) as f32 });
+            if let Drag::Frame { mode: held, .. } = *self.drag.borrow() {
+                mode = held;
+            }
+            if mode != 0 {
+                id = Self::edge_cursor(mode);
+            }
+        } else if self.pick.get() {
+            id = IDC_CROSS;
+        }
+        // SAFETY: a system cursor.
+        unsafe { LoadCursorW(None, id).unwrap_or_default() }
+    }
+
+    /// the capture dimmed, behind the editor: the same darkening the overlay
+    /// had (DIM_ALPHA of black over it). `r`: the part to paint.
+    fn paint_veil(&self, hdc: HDC, r: RECT) {
+        let (w, h) = (r.right - r.left, r.bottom - r.top);
+        let (Ok(from), Ok(black), Ok(one)) = (MemoryDc::compatible_with(hdc), MemoryDc::compatible_with(hdc), Frame::new(1, 1)) else { return };
+        let _a = from.select(self.source.bitmap());
+        let _b = black.select(one.bitmap()); // a new frame is all zero: black
+        // SAFETY: valid dcs for this call.
+        unsafe {
+            let _ = windows::Win32::Graphics::Gdi::BitBlt(hdc, r.left, r.top, w, h, Some(from.0), r.left, r.top, windows::Win32::Graphics::Gdi::SRCCOPY);
+            let blend = windows::Win32::Graphics::Gdi::BLENDFUNCTION { BlendOp: 0, BlendFlags: 0, SourceConstantAlpha: DIM_ALPHA, AlphaFormat: 0 };
+            let _ = windows::Win32::Graphics::Gdi::AlphaBlend(hdc, r.left, r.top, w, h, black.0, 0, 0, 1, 1, blend);
+        }
     }
 
     fn handle_at(&self, p: Pt) -> Option<(u64, usize)> {
@@ -1356,7 +1655,16 @@ impl Editor {
                         let before = self.doc.borrow().find(id).unwrap().shape.clone();
                         *self.drag.borrow_mut() = Drag::Move { id, start: p, before };
                     }
-                    None => return,
+                    None => {
+                        // nothing there: the frame. an edge resizes it, the
+                        // rest of the image moves it
+                        let mode = match self.edge_at(p) {
+                            0 => FRAME_MOVE,
+                            m => m,
+                        };
+                        self.start_frame_drag(mode, self.hwnd.get());
+                        return;
+                    }
                 }
             }
         } else if tool == Tool::Cursor {
@@ -1383,6 +1691,7 @@ impl Editor {
             self.select(None);
             let shape = match tool {
                 Tool::Pen => Shape::Pen(vec![p]),
+                Tool::Highlighter if self.styles.borrow().highlight_rect => Shape::HighlightRect(Area::from_points(p, p)),
                 Tool::Highlighter => Shape::Highlight(vec![p]),
                 t => Shape::drawn(t, p, p, shift).unwrap(),
             };
@@ -1420,7 +1729,11 @@ impl Editor {
                     }
                     _ => {
                         let old = shape.extent(style);
-                        *shape = Shape::drawn(self.tool.get(), start, p, shift).unwrap();
+                        *shape = if matches!(shape, Shape::HighlightRect(_)) {
+                            Shape::HighlightRect(crate::annotate::constrain_area(start, p, shift))
+                        } else {
+                            Shape::drawn(self.tool.get(), start, p, shift).unwrap()
+                        };
                         let new = shape.extent(style);
                         drop(slot);
                         self.invalidate(old.union(new));
@@ -1429,6 +1742,7 @@ impl Editor {
             }
             Drag::Move { id, start, before } => self.preview(id, before.translated(p.x - start.x, p.y - start.y)),
             Drag::Resize { id, handle, before } => self.preview(id, before.with_handle(handle, p, shift)),
+            Drag::Frame { mode, start, before } => self.drag_frame(mode, start, before),
         }
     }
 
@@ -1483,13 +1797,28 @@ impl Editor {
                     }
                 }
             }
+            Drag::Frame { before, .. } => {
+                let after = self.crop();
+                self.doc.borrow_mut().change_crop(before, after);
+                if after != before {
+                    trace!("editor {}: frame {:?} -> {:?}, state {}", Self::pid(), before, after, self.doc.borrow().state());
+                }
+                self.relayout();
+            }
             Drag::None => {}
         }
         self.redraw_bar();
     }
 
     fn cursor(&self) -> HCURSOR {
-        let id = if self.pick.get() || self.tool.get() != Tool::Select {
+        // a frame drag keeps the cursor of the edge it took
+        let held = match *self.drag.borrow() {
+            Drag::Frame { mode, .. } => Some(mode),
+            _ => None,
+        };
+        let id = if let Some(mode) = held {
+            Self::edge_cursor(mode)
+        } else if self.pick.get() || self.tool.get() != Tool::Select {
             IDC_CROSS
         } else {
             let mut pt = POINT::default();
@@ -1498,13 +1827,15 @@ impl Editor {
                 let _ = GetCursorPos(&mut pt);
                 let _ = ScreenToClient(self.hwnd.get(), &mut pt);
             }
-            let p = Pt { x: pt.x as f32, y: pt.y as f32 };
+            let (ox, oy) = self.origin();
+            let p = Pt { x: (pt.x + ox) as f32, y: (pt.y + oy) as f32 };
             match self.handle_at(p) {
                 Some((_, 0 | 2)) => IDC_SIZENWSE,
                 Some((_, 1 | 3)) if self.doc.borrow().find(self.selected.get().unwrap()).is_some_and(|i| !matches!(i.shape, Shape::Line(..) | Shape::Arrow(..))) => IDC_SIZENESW,
                 Some(_) => IDC_SIZEALL,
                 None if self.doc.borrow().hit(p, HIT_TOL).is_some() => IDC_SIZEALL,
-                None => IDC_ARROW,
+                // nothing there: the frame (edges resize it, the rest moves it)
+                None => Self::edge_cursor(self.edge_at(p)),
             }
         };
         // SAFETY: a system cursor.
@@ -1561,7 +1892,8 @@ impl Editor {
     fn bar_place(&self, w: i32, h: i32) -> (i32, i32) {
         let work = self.work_area();
         let gap = self.pxi(8);
-        let img = RECT { left: self.at.x, top: self.at.y, right: self.at.x + self.at.width, bottom: self.at.y + self.at.height };
+        let at = self.at.get();
+        let img = RECT { left: at.x, top: at.y, right: at.x + at.width, bottom: at.y + at.height };
         let x = (img.right - w).min(work.right - w).max(work.left);
         let y = if img.bottom + gap + h <= work.bottom {
             img.bottom + gap
@@ -1586,8 +1918,9 @@ impl Editor {
         }
     }
 
-    fn hint(b: Button) -> &'static str {
+    fn hint(&self, b: Button) -> &'static str {
         match b {
+            Button::Tool(Tool::Highlighter) if self.styles.borrow().highlight_rect => "highlighter · h · again: stroke",
             Button::Tool(t) => t.label(),
             Button::Style => "colour and width · [ ] · i picks",
             Button::Undo => "undo · ctrl+z",
@@ -1657,9 +1990,9 @@ impl Editor {
             match (self.hover.get(), status.as_ref()) {
                 (_, Some((s, true))) => p.text(s, &fonts.small, text, t.alert),
                 (None, _) if fly_hint.is_some() => p.text(fly_hint.unwrap(), &fonts.small, text, t.ink2),
-                (Some(b), _) => p.text(Self::hint(b), &fonts.small, text, t.ink2),
+                (Some(b), _) => p.text(self.hint(b), &fonts.small, text, t.ink2),
                 (None, Some((s, false))) => p.text(s, &fonts.small, text, t.ink),
-                (None, None) => p.text(&format!("{} × {}", self.at.width, self.at.height), &fonts.mono, text, t.ink3),
+                (None, None) => p.text(&format!("{} × {}", self.at.get().width, self.at.get().height), &fonts.mono, text, t.ink3),
             }
         });
     }
@@ -1715,6 +2048,10 @@ impl Editor {
             }
             Button::Tool(Tool::Rect) => poly(&[(-7.0, -5.0), (7.0, -5.0), (7.0, 5.0), (-7.0, 5.0)], true),
             Button::Tool(Tool::Ellipse) => p.ellipse(at(0.0, 0.0), 7.0 * s, 5.5 * s, c, sw),
+            Button::Tool(Tool::Highlighter) if self.styles.borrow().highlight_rect => {
+                p.fill_f(D2D_RECT_F { left: cx - 7.0 * s, top: cy - 4.0 * s, right: cx + 7.0 * s, bottom: cy + 4.0 * s }, [c[0], c[1], c[2], c[3] * 0.55]);
+                poly(&[(-7.0, 7.0), (7.0, 7.0)], false);
+            }
             Button::Tool(Tool::Highlighter) => {
                 p.line_w(at(-6.0, 2.0), at(6.0, -2.0), [c[0], c[1], c[2], c[3] * 0.55], 5.0 * s);
                 poly(&[(-7.0, 7.0), (7.0, 7.0)], false);
@@ -1853,8 +2190,8 @@ impl Editor {
 
     /// the colour of the captured image (never the annotations) at `p`.
     fn source_color(&self, p: Pt) -> u32 {
-        let x = (p.x as i32).clamp(0, self.at.width - 1) as usize;
-        let y = (p.y as i32).clamp(0, self.at.height - 1) as usize;
+        let x = (p.x as i32).clamp(0, self.screen.width - 1) as usize;
+        let y = (p.y as i32).clamp(0, self.screen.height - 1) as usize;
         let i = y * self.source.stride() + x * 4;
         let px = &self.source.pixels()[i..i + 3];
         ((px[2] as u32) << 16) | ((px[1] as u32) << 8) | px[0] as u32
@@ -2221,7 +2558,20 @@ unsafe extern "system" fn image_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lpara
             WM_NCHITTEST => LRESULT(HTCLIENT as isize),
             WM_WINDOWPOSCHANGING => {
                 let pos = &mut *(lparam.0 as *mut WINDOWPOS);
-                pos.flags |= SWP_NOSIZE; // snap or win+arrow must not resize the image
+                if !ed.resizing.get() {
+                    // snap or win+arrow must not resize or move the image: it
+                    // is anchored to the frozen screen, only the frame moves it
+                    pos.flags |= SWP_NOSIZE | windows::Win32::UI::WindowsAndMessaging::SWP_NOMOVE;
+                }
+                LRESULT(0)
+            }
+            // the frame can be any size from a few pixels to the whole capture
+            windows::Win32::UI::WindowsAndMessaging::WM_GETMINMAXINFO => {
+                let info = &mut *(lparam.0 as *mut windows::Win32::UI::WindowsAndMessaging::MINMAXINFO);
+                let max = POINT { x: ed.screen.width, y: ed.screen.height };
+                info.ptMinTrackSize = POINT { x: 1, y: 1 };
+                info.ptMaxTrackSize = max;
+                info.ptMaxSize = max;
                 LRESULT(0)
             }
             WM_SETCURSOR if (lparam.0 & 0xffff) as u32 == HTCLIENT => {
@@ -2508,16 +2858,46 @@ unsafe extern "system" fn frame_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lpara
     }
 }
 
-/// the veil: black, eats clicks without taking the focus away from the editor.
+/// the veil: the frozen capture, darkened. clicks never take the focus away
+/// from the editor; near the frame's edge (select tool) a press drags it.
 unsafe extern "system" fn dim_proc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     unsafe {
+        if msg == WM_NCCREATE {
+            store_editor(hwnd, lparam);
+            return DefWindowProcW(hwnd, msg, wparam, lparam);
+        }
+        let Some(ed) = editor_of(hwnd) else { return DefWindowProcW(hwnd, msg, wparam, lparam) };
         match msg {
-            WM_MOUSEACTIVATE => LRESULT(windows::Win32::UI::WindowsAndMessaging::MA_NOACTIVATEANDEAT as isize),
+            WM_MOUSEACTIVATE => LRESULT(MA_NOACTIVATE as isize),
+            windows::Win32::UI::WindowsAndMessaging::WM_ERASEBKGND => LRESULT(1),
+            WM_SETCURSOR if (lparam.0 & 0xffff) as u32 == HTCLIENT => {
+                SetCursor(Some(ed.veil_cursor()));
+                LRESULT(1)
+            }
+            WM_LBUTTONDOWN => {
+                ed.veil_down(hwnd);
+                LRESULT(0)
+            }
+            WM_MOUSEMOVE if wparam.0 & MK_LBUTTON != 0 => {
+                if ed.dragging() {
+                    ed.mouse_drag(Pt::default(), false);
+                }
+                LRESULT(0)
+            }
+            WM_LBUTTONUP => {
+                if ed.dragging() {
+                    ed.mouse_up(Pt::default(), false);
+                }
+                LRESULT(0)
+            }
+            WM_CAPTURECHANGED if HWND(lparam.0 as *mut _) != hwnd => {
+                ed.finish_drag();
+                LRESULT(0)
+            }
             WM_PAINT => {
                 let mut ps = PAINTSTRUCT::default();
                 let hdc = BeginPaint(hwnd, &mut ps);
-                let black = windows::Win32::Graphics::Gdi::GetStockObject(windows::Win32::Graphics::Gdi::BLACK_BRUSH);
-                let _ = windows::Win32::Graphics::Gdi::FillRect(hdc, &ps.rcPaint, windows::Win32::Graphics::Gdi::HBRUSH(black.0));
+                ed.paint_veil(hdc, ps.rcPaint);
                 let _ = EndPaint(hwnd, &ps);
                 LRESULT(0)
             }

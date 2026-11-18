@@ -1,5 +1,11 @@
 # changelog
 
+## 0.1.2 — 2026-11-18
+
+- the editor's frame can be moved and resized after the capture: in the select tool (v) drag an edge or corner (also just outside the image) to resize, drag empty space inside the image to move it. the screen is frozen at the moment of the capture and the frame moves over those pixels, so nothing that appears on the screen later gets into the picture. moving the frame is an edit: undo and redo bring it back, and ctrl+s saves the new frame. the rest of the screen is the frozen capture, darkened
+- win+arrow, win+shift+arrow and snap no longer move or resize the editor: it is anchored to the frozen screen; the frame moves with select instead
+- highlighter has two modes: the stroke as before, or a translucent filled rectangle. press h again (or the button again) to switch; the choice is remembered
+
 ## 0.1.1 — 2026-11-13
 
 - the editor keeps the selection's frame: the same 1 px white border and crop marks as the region overlay stay around the image, so its edges are clear over a dark screen ([#1](https://github.com/lezneve/kadr/issues/1)). the frame is outside the image and never in the copied or saved picture

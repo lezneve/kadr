@@ -4,7 +4,7 @@ screenshots, without the extra stuff.
 
 a small windows utility by lezneve. press a hotkey, select, paste or find the file. nothing else runs, renders or listens while you are not using it.
 
-**version 0.1.1**. windows 10/11, x64. free and open source (MIT). download: [releases](https://github.com/lezneve/kadr/releases).
+**version 0.1.2**. windows 10/11, x64. free and open source (MIT). download: [releases](https://github.com/lezneve/kadr/releases).
 
 ## what it does
 
@@ -20,9 +20,9 @@ each capture opens in the editor, at the place it was taken, 1:1. nothing is cop
 - `ctrl+s` saves it as a png in windows' screenshots folder (`pictures\screenshots`; the clipboard is left alone) and closes the editor; a short "saved" note shows where the capture was
 - `esc` closes it without exporting
 
-in the region overlay `ctrl+a` takes the whole monitor; hold `ctrl` while dragging to move the selection instead of resizing it. while the editor is open, the rest of the screen stays darkened.
+in the region overlay `ctrl+a` takes the whole monitor; hold `ctrl` while dragging to move the selection instead of resizing it. while the editor is open, the rest of the screen shows it frozen at the moment of the capture, darkened; win+arrow and snap do not move the editor.
 
-in the editor you can draw on the capture: select (v), pen (p), line (l), arrow (a), rectangle (r), ellipse (e), highlighter (h), blur (b), redact (x, an opaque filled rectangle) and the mouse pointer (m). shift makes squares and circles and keeps lines and arrows at 45°. the pointer tool puts the mouse pointer from the moment of the capture on the image (where it was, if that is inside); a click moves it, and select moves it too. with select you move a shape, drag a corner to resize it, and delete it with delete. `ctrl+z` / `ctrl+y` undo and redo.
+in the editor you can draw on the capture: select (v), pen (p), line (l), arrow (a), rectangle (r), ellipse (e), highlighter (h), blur (b), redact (x, an opaque filled rectangle) and the mouse pointer (m). shift makes squares and circles and keeps lines and arrows at 45°. the pointer tool puts the mouse pointer from the moment of the capture on the image (where it was, if that is inside); a click moves it, and select moves it too. with select you move a shape, drag a corner to resize it, and delete it with delete; drag the frame's edge or corner to resize the capture, or empty space inside it to move the frame over the frozen screen. the highlighter draws a stroke or a translucent filled rectangle: press h again to switch. `ctrl+z` / `ctrl+y` undo and redo.
 
 the dot on the toolbar opens a small style panel: seven colours (also keys 1–7), any colour through the windows colour dialog, an eyedropper that takes a colour from the capture (key i), and a width from 1 to 32 px with a preview at its real size (also `[` and `]`, or the mouse wheel over the toolbar). strokes (pen, line, arrow, rectangle, ellipse), the highlighter and redact each keep their own colour and width; blur has none. with a shape selected, the panel changes that shape. the last colours and widths are remembered in `%APPDATA%\kadr\editor.ini`.
 
@@ -53,7 +53,7 @@ settings live in `%APPDATA%\kadr\settings.ini`, a plain text file you can also e
 
 ## install
 
-download `kadr-0.1.1-setup.exe` from [releases](https://github.com/lezneve/kadr/releases) and run it. it installs kadr for you only, in `%LOCALAPPDATA%\Programs\kadr`, with a start menu entry and an entry in windows settings › apps. no administrator rights. two switches: start with windows (off by default) and start kadr now (on). running it again updates kadr and keeps your settings.
+download `kadr-0.1.2-setup.exe` from [releases](https://github.com/lezneve/kadr/releases) and run it. it installs kadr for you only, in `%LOCALAPPDATA%\Programs\kadr`, with a start menu entry and an entry in windows settings › apps. no administrator rights. two switches: start with windows (off by default) and start kadr now (on). running it again updates kadr and keeps your settings.
 
 portable use works too: copy `kadr.exe` anywhere and run it.
 

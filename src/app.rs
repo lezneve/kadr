@@ -350,7 +350,7 @@ impl App {
                     |rect| {
                         if settings.edit {
                             let at = capture::Rect { x: screen.x + rect.x, y: screen.y + rect.y, ..rect };
-                            edited = Some(full.crop(rect).map_err(|e| e.message()).and_then(|part| self.edit(&part, at, pointer.as_ref(), true, started)));
+                            edited = Some(self.edit(&full, screen, at, pointer.as_ref(), true, started));
                         }
                     },
                 )
@@ -375,32 +375,45 @@ impl App {
                         capture::monitor_at_cursor().map_err(|e| e.message())?
                     }
                 };
+                if settings.edit {
+                    trace!("window {}x{} at {},{}: editor", rect.width, rect.height, rect.x, rect.y);
+                    return self.edit_frozen(rect, pointer.as_ref(), started);
+                }
                 let f = capture::grab(rect).map_err(|e| format!("could not read the screen: {}", e.message()))?;
                 trace!("window {}x{} at {},{}: {:.1} ms", rect.width, rect.height, rect.x, rect.y, ms(started));
-                if settings.edit {
-                    return self.edit(&f, rect, pointer.as_ref(), false, started);
-                }
                 f
             }
             Action::Screen => {
                 let rect = capture::monitor_at_cursor().map_err(|e| e.message())?;
+                if settings.edit {
+                    trace!("screen {}x{} at {},{}: editor", rect.width, rect.height, rect.x, rect.y);
+                    return self.edit_frozen(rect, pointer.as_ref(), started);
+                }
                 let f = capture::grab(rect).map_err(|e| format!("could not read the screen: {}", e.message()))?;
                 trace!("screen {}x{} at {},{}: {:.1} ms", rect.width, rect.height, rect.x, rect.y, ms(started));
-                if settings.edit {
-                    return self.edit(&f, rect, pointer.as_ref(), false, started);
-                }
                 f
             }
         };
         self.deliver(&frame, settings)
     }
 
-    /// opens the editor on `frame`, captured at `at`. nothing is copied or
-    /// saved here. `wait`: keep the caller's overlay up until the editor's
-    /// first frame is on screen (at most 1.5 s).
-    fn edit(&self, frame: &Frame, at: capture::Rect, pointer: Option<&capture::CursorShot>, wait: bool, started: Instant) -> Result<(), String> {
+    /// the window and monitor modes in the editor: the editor needs the whole
+    /// screen frozen (it can move its frame over it), so grab that once and
+    /// open the editor on `at` inside it.
+    fn edit_frozen(&self, at: capture::Rect, pointer: Option<&capture::CursorShot>, started: Instant) -> Result<(), String> {
+        let screen = capture::virtual_screen();
+        let full = capture::grab(screen).map_err(|e| format!("could not read the screen: {}", e.message()))?;
+        // a window can reach past the screen: the editor shows what is on it
+        let at = at.intersect(screen).ok_or("the capture is outside the screen")?;
+        self.edit(&full, screen, at, pointer, false, started)
+    }
+
+    /// opens the editor on `frame` (the screen area `screen`), showing `at`
+    /// of it. nothing is copied or saved here. `wait`: keep the caller's
+    /// overlay up until the editor's first frame is on screen (at most 1.5 s).
+    fn edit(&self, frame: &Frame, screen: capture::Rect, at: capture::Rect, pointer: Option<&capture::CursorShot>, wait: bool, started: Instant) -> Result<(), String> {
         let t = Instant::now();
-        let launched = crate::editor::launch(frame, at, pointer, self.settings_path.as_deref(), self.private_clipboard)?;
+        let launched = crate::editor::launch(frame, screen, at, pointer, self.settings_path.as_deref(), self.private_clipboard)?;
         if wait {
             let shown = launched.wait_shown(1500);
             trace!(
